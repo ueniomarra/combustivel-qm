@@ -212,7 +212,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <div id="sec-relatorio" class="section">
   <div class="month-selector"><button onclick="changeReportMonth(-1)">‹</button><span id="report-month-label"></span><button onclick="changeReportMonth(1)">›</button></div>
   <div id="report-content"></div>
-  <button class="btn-export" onclick="exportar()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> COPIAR RELATÓRIO</button>
+  <button class="btn-export" onclick="exportarPDF()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg> BAIXAR PDF</button>
   <button class="btn-export" onclick="whatsapp()" style="margin-top:6px;">📱 ENVIAR VIA WHATSAPP</button>
   <button class="btn-danger" onclick="limparMes()">LIMPAR DADOS DESTE MÊS</button>
 </div>
@@ -309,6 +309,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <button class="nav-item" onclick="showSection('relatorio',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16M4 20V4m4 16v-8m4 8V8m4 12v-5"/></svg>Relatório</button>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 const SK='qm_combustivel_v3';
 const MS=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -598,6 +599,166 @@ function exportar(){const t=gTxt();if(!t){showToast('⚠️ Sem dados');return;}
 function whatsapp(){const t=gTxt();if(!t){showToast('⚠️ Sem dados');return;}window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');}
 function fbCopy(t){const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0;left:-999px';document.body.appendChild(a);a.select();a.setSelectionRange(0,999999);try{document.execCommand('copy');showToast('📋 Copiado!');}catch{showToast('⚠️ Erro ao copiar');}document.body.removeChild(a);}
 function limparMes(){const r=getMR(rM,rY);if(!r.length){showToast('⚠️ Mês vazio');return;}if(!confirm(`Excluir ${r.length} registros de ${MS[rM]} ${rY}?`))return;const all=getData().filter(x=>{const d=new Date(x.data+'T12:00:00');return!(d.getMonth()===rM&&d.getFullYear()===rY);});saveData(all);renderRel();showToast('🗑 Mês limpo');}
+function normPDF(s){
+  if(!s)return'';
+  return String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\x00-\xFF]/g,'');
+}
+
+function exportarPDF(){
+  const recs=getMR(rM,rY);
+  if(!recs.length){showToast('⚠️ Sem dados');return;}
+  if(typeof window.jspdf==='undefined'){showToast('⚠️ Aguarde o carregamento...');return;}
+  const s=cs(recs);
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF('p','mm','a4');
+  const W=210,H=297,mg=12;
+  let y=0;
+  const BLUE=[0,114,206],GREEN=[0,180,120],AMBER=[200,140,0];
+  const RED=[210,60,70],ARLA=[30,155,210],DARK=[35,42,55];
+  const GRAY=[110,120,135],LGRAY=[238,242,246],WHITE=[255,255,255];
+  const TEXT=[40,48,62],BORDER=[210,215,222];
+  const sc=(...c)=>doc.setTextColor(...c);
+  const sf=(...c)=>doc.setFillColor(...c);
+  const sd=(...c)=>doc.setDrawColor(...c);
+  const n=normPDF;
+
+  // Header
+  sf(...BLUE);doc.rect(0,0,W,36,'F');
+  sc(...WHITE);doc.setFont('helvetica','bold');doc.setFontSize(22);
+  doc.text('QM',mg,15);
+  sd(180,215,245);doc.setLineWidth(0.4);
+  doc.line(mg+17,7,mg+17,29);
+  doc.setFontSize(14);doc.text('Controle de Combustivel',mg+22,14);
+  doc.setFont('helvetica','normal');doc.setFontSize(8.5);
+  doc.text('Queiroz Marra Solucoes Integradas',mg+22,21);
+  doc.setFont('helvetica','bold');doc.setFontSize(11);
+  doc.text(n(MS[rM]).toUpperCase()+' / '+rY,mg+22,29);
+  sc(180,215,245);doc.setFont('helvetica','normal');doc.setFontSize(7);
+  doc.text('Gerado em '+new Date().toLocaleDateString('pt-BR'),W-mg,30,{align:'right'});
+  y=44;
+
+  function heading(txt){
+    sf(...LGRAY);doc.roundedRect(mg,y,W-2*mg,7,1.5,1.5,'F');
+    sc(...BLUE);doc.setFont('helvetica','bold');doc.setFontSize(8.5);
+    doc.text(n(txt),mg+4,y+5);y+=12;
+  }
+
+  function card(x,cy,w,h,label,value,color,sub){
+    sf(...LGRAY);doc.roundedRect(x,cy,w,h,2,2,'F');
+    sc(...GRAY);doc.setFont('helvetica','bold');doc.setFontSize(6.5);
+    doc.text(n(label).toUpperCase(),x+3,cy+5);
+    sc(...color);doc.setFont('helvetica','bold');doc.setFontSize(13);
+    doc.text(n(value),x+3,cy+13);
+    if(sub){sc(...GRAY);doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.text(n(sub),x+3,cy+19);}
+  }
+
+  const bW=(W-2*mg-4)/2,bH=22,gp=4;
+
+  // Resumo
+  heading('RESUMO DO MES');
+  sf(...LGRAY);doc.roundedRect(mg,y,W-2*mg,16,2,2,'F');
+  sc(...GRAY);doc.setFont('helvetica','bold');doc.setFontSize(7);
+  doc.text('TOTAL GASTO (COMBUSTIVEL + ARLA)',mg+3,y+5.5);
+  sc(...GREEN);doc.setFontSize(18);
+  doc.text('R$ '+fm(s.tG),mg+3,y+13.5);
+  let pm2=rM-1,py2=rY;
+  if(pm2<0){pm2=11;py2--;}
+  const pr=cs(getMR(pm2,py2));
+  if(pr&&pr.tG>0){
+    const diff=s.tG-pr.tG;
+    const pct=((Math.abs(diff)/pr.tG)*100).toFixed(0);
+    sc(...(diff>0?RED:GREEN));
+    doc.setFont('helvetica','bold');doc.setFontSize(9);
+    doc.text((diff>0?'+':'-')+pct+'% vs '+MS[pm2].substring(0,3),W-mg-3,y+13.5,{align:'right'});
+  }
+  y+=20;
+
+  card(mg,y,bW,bH,'Abastecimentos',String(s.n),DARK,null);
+  card(mg+bW+gp,y,bW,bH,'Litros Combustivel',s.tL.toFixed(1)+' L',DARK,null);
+  y+=bH+3;
+  card(mg,y,bW,bH,'Preco Medio / L','R$ '+s.pM.toFixed(2),AMBER,null);
+  card(mg+bW+gp,y,bW,bH,'Km Rodados',s.kR>0?s.kR.toLocaleString('pt-BR'):'---',BLUE,s.kR>0?s.kMin.toLocaleString('pt-BR')+' -> '+s.kMax.toLocaleString('pt-BR'):'Km nao informado');
+  y+=bH+3;
+  card(mg,y,bW,bH,'Media Km/L',s.mKL>0?s.mKL.toFixed(1):'---',s.mKL>7?GREEN:s.mKL>0?RED:DARK,null);
+  card(mg+bW+gp,y,bW,bH,'Custo por Km',s.cK>0?'R$ '+s.cK.toFixed(2):'---',BLUE,null);
+  y+=bH+4;
+
+  let xc=0;
+  if(s.tArlaL>0){card(mg+xc*(bW+gp),y,bW,bH,'Arla 32','R$ '+fm(s.tArlaV),ARLA,s.tArlaL.toFixed(1)+' L no mes');xc++;}
+  if(s.tDesc>0){card(mg+xc*(bW+gp),y,bW,bH,'Descontos','R$ '+fm(s.tDesc),GREEN,'economizados');xc++;}
+  if(xc>0)y+=bH+4;
+
+  // Por tipo
+  heading('POR TIPO DE USO');
+  card(mg,y,bW,bH,'Trabalho','R$ '+fm(s.gT),GREEN,s.tr.length+'x  '+s.lT.toFixed(0)+'L');
+  card(mg+bW+gp,y,bW,bH,'Lazer','R$ '+fm(s.gL),BLUE,s.lz.length+'x  '+s.lL.toFixed(0)+'L');
+  y+=bH+8;
+
+  // Registros
+  heading('REGISTROS DETALHADOS');
+  const cols=[
+    {l:'Data',w:20},{l:'Litros',w:22},{l:'Comb.',w:22},
+    {l:'R$/L',w:20},{l:'Total',w:30},{l:'Pagto',w:24},
+    {l:'Km',w:24},{l:'Tipo',w:24}
+  ];
+
+  function tableHeader(){
+    sf(...BLUE);doc.rect(mg,y,W-2*mg,7,'F');
+    sc(...WHITE);doc.setFont('helvetica','bold');doc.setFontSize(7);
+    let cx=mg;cols.forEach(c=>{doc.text(c.l,cx+2,y+5);cx+=c.w;});
+    y+=7;
+  }
+  tableHeader();
+
+  recs.forEach((r,i)=>{
+    if(y>H-22){
+      doc.addPage();
+      sf(...BLUE);doc.rect(0,0,W,12,'F');
+      sc(...WHITE);doc.setFont('helvetica','bold');doc.setFontSize(9);
+      doc.text('QM - '+n(MS[rM]).toUpperCase()+' / '+rY+' (continuacao)',mg,8);
+      y=18;
+      tableHeader();
+    }
+    const rH=6.5;
+    if(i%2===0){sf(...LGRAY);doc.rect(mg,y,W-2*mg,rH,'F');}
+    const d=r.data.split('-');
+    const totShow=r.totalFinal!=null?r.totalFinal:(r.totalGeral||r.total);
+    const cb=r.combustivel?r.combustivel.substring(0,3).toUpperCase():'';
+    const pgmap={cartao:'Cartao',dinheiro:'Dinheiro',pix:'PIX'};
+    const cells=[
+      d[2]+'/'+d[1]+'/'+d[0].substring(2),
+      r.litros.toFixed(1)+' L',
+      cb,
+      'R$ '+r.preco.toFixed(2),
+      'R$ '+fm(totShow)+(r.descVal>0?' *':''),
+      pgmap[r.pagamento]||'Cartao',
+      r.km?r.km.toLocaleString('pt-BR'):'---',
+      r.tipo==='trabalho'?'Trabalho':'Lazer'
+    ];
+    doc.setFont('helvetica','normal');doc.setFontSize(7);
+    let cx=mg;
+    cells.forEach((cell,j)=>{
+      if(j===7)sc(...(r.tipo==='trabalho'?GREEN:BLUE));
+      else if(j===4&&r.descVal>0)sc(...GREEN);
+      else sc(...TEXT);
+      doc.text(n(cell),cx+2,y+4.5);cx+=cols[j].w;
+    });
+    y+=rH;
+  });
+
+  sd(...BORDER);doc.setLineWidth(0.3);doc.line(mg,y,W-mg,y);
+  if(s.tDesc>0){
+    sc(...GRAY);doc.setFont('helvetica','normal');doc.setFontSize(6.5);
+    doc.text('* Total com desconto aplicado',mg,y+4.5);
+  }
+
+  sc(...GRAY);doc.setFont('helvetica','normal');doc.setFontSize(7);
+  doc.text('Queiroz Marra Solucoes Integradas - Controle de Combustivel',W/2,H-7,{align:'center'});
+
+  doc.save('relatorio-'+n(MS[rM]).toLowerCase()+'-'+rY+'.pdf');
+  showToast('📄 PDF gerado!');
+}
+
 function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2500);}
 
 showLastFill();
