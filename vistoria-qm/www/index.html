@@ -1,0 +1,1944 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Vistoria QM"/>
+<meta name="theme-color" content="#0A1628"/>
+<title>Vistoria QM – Queiroz Marra</title>
+<link rel="manifest" href="manifest.json"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;background:#F0F4F8}
+body{font-family:'SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px}
+input,select,textarea,button{font-family:inherit}
+#root{max-width:430px;margin:0 auto;min-height:100vh}
+
+/* tabbar */
+#tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;
+  background:rgba(255,255,255,.97);backdrop-filter:blur(20px);border-top:1px solid #E5E7EB;
+  display:flex;z-index:200;padding-bottom:env(safe-area-inset-bottom,0)}
+.tab-btn{flex:1;background:none;border:none;padding:12px 0;cursor:pointer;display:flex;
+  flex-direction:column;align-items:center;gap:3px}
+.tab-ico{font-size:20px}
+.tab-lbl{font-size:10px;font-weight:800}
+
+/* fab */
+#fab-wrap{position:fixed;bottom:28px;right:16px;z-index:1000;display:flex;
+  flex-direction:column;align-items:flex-end;gap:10px}
+#fab-menu{display:none;flex-direction:column;gap:10px;align-items:flex-end}
+.fab-btn{width:54px;height:54px;border-radius:27px;border:none;color:#fff;font-size:22px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 20px rgba(0,0,0,.3);transition:all .2s}
+#fab-overlay{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.25);
+  backdrop-filter:blur(2px);display:none}
+
+/* geral */
+.screen{min-height:100vh;padding-bottom:80px;background:#F0F4F8}
+.hdr{background:linear-gradient(160deg,#0A1628 0%,#1B4332 60%,#2D6A4F 100%);
+  padding:48px 16px 24px;color:#fff;border-bottom-left-radius:24px;border-bottom-right-radius:24px}
+.hdr-sm{border-radius:0;padding:48px 16px 20px}
+.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;
+  border:1px solid #E5E7EB;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.lbl{font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;letter-spacing:.3px;display:block}
+.inp{width:100%;border:1.5px solid #D1D5DB;border-radius:10px;padding:11px 14px;
+  font-size:14px;color:#111827;background:#fff;box-sizing:border-box;outline:none;
+  font-family:inherit}
+textarea.inp{resize:vertical}
+.fld{margin-bottom:14px}
+.btn{width:100%;border:none;border-radius:14px;padding:15px;font-size:16px;
+  font-weight:800;cursor:pointer;color:#fff}
+.pb{background:#E5E7EB;border-radius:99px;height:5px;overflow:hidden}
+.pb-fill{height:100%;border-radius:99px;transition:width .4s}
+.badge{display:inline-block;font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;letter-spacing:.3px}
+
+/* checklist item */
+.ci{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;
+  border:1px solid #E5E7EB;border-left-width:4px}
+.ci-c{background:#F0FDF4;border-color:#10B981}
+.ci-nc{background:#FFF5F5;border-color:#EF4444}
+.ci-na{background:#F9FAFB;border-color:#9CA3AF}
+.ci-text{font-size:13px;color:#1F2937;font-weight:500;line-height:1.55;margin-bottom:10px}
+.ci-btns{display:flex;gap:5px;margin-bottom:8px}
+.ci-btn{flex:1;border:none;border-radius:8px;padding:8px 4px;font-size:11px;font-weight:800;cursor:pointer}
+.ci-nota{width:100%;border:1.5px solid #D1D5DB;border-radius:10px;padding:11px 14px;
+  font-size:13px;color:#111827;background:#fff;box-sizing:border-box;font-family:inherit;
+  resize:vertical;outline:none}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="tabbar">
+  <button class="tab-btn" id="tb-home" onclick="goTab('home')">
+    <span class="tab-ico">🏠</span><span class="tab-lbl" style="color:#1B4332">Início</span>
+  </button>
+  <button class="tab-btn" id="tb-hist" onclick="goTab('hist')">
+    <span class="tab-ico">📁</span><span class="tab-lbl" style="color:#9CA3AF">Histórico</span>
+  </button>
+</div>
+<div id="fab-overlay" onclick="closeFab()"></div>
+<div id="fab-wrap" style="display:none">
+  <div id="fab-menu">
+    <button onclick="goHome()" style="background:#1B4332;color:#fff;border:none;border-radius:50px;
+      padding:12px 20px;font-size:13px;font-weight:800;cursor:pointer;
+      box-shadow:0 4px 14px rgba(0,0,0,.25);white-space:nowrap">🏠 Página Inicial</button>
+  </div>
+  <button class="fab-btn" id="fab-btn" onclick="toggleFab()">☰</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DADOS ORIGINAIS DO APP
+// ═══════════════════════════════════════════════
+const LOGO_QM_B64 = "data:image/jpeg;base64,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";
+
+
+const CIDADES_PADRAO = [
+  { id: "c1", nome: "Buriti Alegre", uf: "GO", pop_urbana: 10833, pop_total: 13284, area_km2: 1120, geracao_per_capita: 0.8 },
+  { id: "c2", nome: "", uf: "GO", pop_urbana: 0, pop_total: 0, area_km2: 0, geracao_per_capita: 0.8 },
+  { id: "c3", nome: "", uf: "GO", pop_urbana: 0, pop_total: 0, area_km2: 0, geracao_per_capita: 0.8 },
+  { id: "c4", nome: "", uf: "GO", pop_urbana: 0, pop_total: 0, area_km2: 0, geracao_per_capita: 0.8 },
+  { id: "c5", nome: "", uf: "GO", pop_urbana: 0, pop_total: 0, area_km2: 0, geracao_per_capita: 0.8 },
+];
+
+
+const MODULOS = {
+  aterro: {
+    id: "aterro", label: "Aterro Provisório (Valas)", icon: "🏗️",
+    cor: "#1B4332", corLight: "#2D6A4F",
+    frequencia: "Quinzenal", cor_badge: "#1B4332",
+    lei: "PNRS Lei 12.305/2010 · NBR 15849 · NBR 8419 · Decreto GO 10.367/2021",
+    descricao: "Vistoria técnica em aterro de valas (aterro provisório municipal)",
+  },
+  sanitario: {
+    id: "sanitario", label: "Aterro Sanitário", icon: "♻️",
+    cor: "#065F46", corLight: "#059669",
+    frequencia: "Mensal", cor_badge: "#065F46",
+    lei: "PNRS Lei 12.305/2010 · NBR 8419 · NBR 13896 · CONAMA 316/2002",
+    descricao: "Vistoria técnica em aterro sanitário com licença de operação",
+  },
+  prad: {
+    id: "prad", label: "PRAD – Lixão Encerrado", icon: "🌱",
+    cor: "#14532D", corLight: "#166534",
+    frequencia: "Mensal", cor_badge: "#14532D",
+    lei: "PNRS Lei 12.305/2010 · CONAMA 420/2009 · Decreto GO 10.367/2021 · NBR 15849",
+    descricao: "Monitoramento de área em recuperação após encerramento de lixão",
+  },
+  rcc: {
+    id: "rcc", label: "Resíduos de Construção Civil", icon: "🧱",
+    cor: "#78350F", corLight: "#B45309",
+    frequencia: "Mensal", cor_badge: "#78350F",
+    lei: "CONAMA 307/2002 · NBR 10004 · PNRS Lei 12.305/2010 · Res. CONAMA 348/2004",
+    descricao: "Vistoria de área de transbordo, triagem e reciclagem de RCC",
+  },
+  coleta: {
+    id: "coleta", label: "Coleta Seletiva", icon: "♻️",
+    cor: "#1E3A5F", corLight: "#2563EB",
+    frequencia: "Mensal", cor_badge: "#1E3A5F",
+    lei: "PNRS Lei 12.305/2010 · Decreto GO 10.367/2021 · Decreto Federal 10.940/2022 · Res. ANA 79/2021",
+    descricao: "Monitoramento do sistema de coleta seletiva, PEVs, rotas e cooperativas",
+  },
+};
+
+const CHECKLIST = {
+
+  // ─────────────────────────────────────────────────────────────────
+  // ATERRO PROVISÓRIO (VALAS)
+  // ─────────────────────────────────────────────────────────────────
+  aterro: {
+    "Infraestrutura e Acesso": [
+      { id: "at_a1", item: "Portão de acesso com cadeado ou sistema de controle – verificar estado físico" },
+      { id: "at_a2", item: "Cerca perimetral 100% íntegra: ausência de buracos, rompimentos ou pontos de entrada" },
+      { id: "at_a3", item: "Placa de identificação da área: nome do responsável técnico, RT, CREA e proibições" },
+      { id: "at_a4", item: "Plano de Emergência Ambiental afixado na guarita / portaria e atualizado" },
+      { id: "at_a5", item: "Vias de acesso interno em bom estado – sem buracos ou acúmulo de água" },
+      { id: "at_a6", item: "Ausência de catadores, pessoas não autorizadas ou animais domésticos na área operacional" },
+      { id: "at_a7", item: "Sinalização de proibição de descarte irregular visível no acesso" },
+    ],
+    "Valas e Células Ativas": [
+      { id: "at_v1", item: "Número de valas ativas confere com projeto (dimensões: comprimento × largura × profundidade)" },
+      { id: "at_v2", item: "Vala ativa: resíduos sendo lançados diretamente no interior (sem espalhamento externo)" },
+      { id: "at_v3", item: "Cobertura diária com solo ou argila: camada mínima de 20 cm sobre os resíduos" },
+      { id: "at_v4", item: "Ausência de resíduos expostos sem cobertura há mais de 24 horas" },
+      { id: "at_v5", item: "Ausência de queima de resíduos (fumaça, cinzas recentes, odor de queima)" },
+      { id: "at_v6", item: "Ausência de presença excessiva de vetores: urubus, moscas, ratos no interior da vala" },
+      { id: "at_v7", item: "Somente resíduos domiciliares / RSU autorizados na vala – ausência de RSS (resíduos de saúde)" },
+      { id: "at_v8", item: "Ausência de resíduos de construção civil (RCC) misturados ao RSU na vala ativa" },
+      { id: "at_v9", item: "Ausência de resíduos industriais ou perigosos (Classe I) na vala" },
+      { id: "at_v10", item: "Frente de trabalho restrita – operação em uma única vala por vez" },
+    ],
+    "Valas Encerradas e Cobertura Final": [
+      { id: "at_vf1", item: "Valas encerradas com cobertura final completa e nivelada – sem afundamentos" },
+      { id: "at_vf2", item: "Estabilidade dos taludes das valas encerradas – inclinação máx. 1:2 (V:H)" },
+      { id: "at_vf3", item: "Ausência de trincas, fissuras ou recalques diferenciais nas valas encerradas" },
+      { id: "at_vf4", item: "Ausência de exposição de resíduos em valas supostamente encerradas" },
+      { id: "at_vf5", item: "Sinalização / marco das valas encerradas identificado e preservado" },
+    ],
+    "Impermeabilização e Estanqueidade": [
+      { id: "at_i1", item: "Integridade do geotêxtil Bidim: ausência de rasgos, perfurações ou deslocamentos" },
+      { id: "at_i2", item: "Manta PEAD/PEBDL: ausência de rupturas, dobras problemáticas ou pontos de furo" },
+      { id: "at_i3", item: "Soldas e emendas da manta em bom estado (inspeção visual rigorosa)" },
+      { id: "at_i4", item: "Camada de argila de fundo/lateral: integridade da barreira inferior" },
+      { id: "at_i5", item: "Ausência de afloramento de percolado nas laterais ou fora da área de controle" },
+      { id: "at_i6", item: "Ausência de manta exposta à insolação direta por período prolongado (degradação UV)" },
+    ],
+    "Sistema de Drenagem Pluvial e Percolado": [
+      { id: "at_d1", item: "Drenos de percolado (tubos perfurados internos) desobstruídos e funcionais" },
+      { id: "at_d2", item: "Caixa de coleta de percolado: volume atual, coloração e ausência de extravasamento" },
+      { id: "at_d3", item: "Percolado coletado: destino correto (recirculação ou tratamento autorizado)" },
+      { id: "at_d4", item: "Canaletas de drenagem pluvial perimetral desobstruídas e com seção adequada" },
+      { id: "at_d5", item: "Dissipadores de energia nas saídas das canaletas em bom estado" },
+      { id: "at_d6", item: "Talvegues e dispositivos de escoamento superficial funcionais e desobstruídos" },
+      { id: "at_d7", item: "Ausência de erosões ou sulcos no corpo das valas, taludes ou acessos" },
+      { id: "at_d8", item: "Ausência de empoçamento de água pluvial no interior da área de valas" },
+      { id: "at_d9", item: "Curso d'água mais próximo: ausência de coloração escura ou odor suspeito" },
+    ],
+    "Sistema de Drenagem de Gases (Biogás)": [
+      { id: "at_g1", item: "Estação de gaseificação 1 – acessível, identificada e desobstruída" },
+      { id: "at_g2", item: "Estação de gaseificação 2 – acessível, identificada e desobstruída" },
+      { id: "at_g3", item: "Drenos verticais de gás: caps/tampas em posição correta e vedados" },
+      { id: "at_g4", item: "Ausência de pressão anormal nos drenos (teste manual: resistência ao giro da tampa)" },
+      { id: "at_g5", item: "Ausência de odor intenso de H₂S (ovo podre) ou CH₄ fora dos pontos de controle" },
+      { id: "at_g6", item: "Ausência de chamas espontâneas ou pontos quentes na superfície das valas" },
+      { id: "at_g7", item: "Ausência de fissuras no solo indicando migração lateral de gás" },
+      { id: "at_g8", item: "Queimador de biogás (se instalado): operacional e sem falhas estruturais" },
+    ],
+    "Operação e Equipamentos": [
+      { id: "at_o1", item: "Trator / rolo compactador: operacional, sem vazamentos de óleo ou defeitos visíveis" },
+      { id: "at_o2", item: "EPI dos operadores: luvas de raspa, botas impermeáveis, capacete, colete refletivo – USO correto" },
+      { id: "at_o3", item: "Diário de bordo / registro diário de entrada de resíduos atualizado e disponível" },
+      { id: "at_o4", item: "Controle de pesagem ou volumetria dos resíduos recebidos" },
+      { id: "at_o5", item: "Plano de encerramento progressivo das valas afixado e comunicado à equipe" },
+      { id: "at_o6", item: "Ausência de risco de acidente para trabalhadores: borda de vala protegida ou sinalizada" },
+      { id: "at_o7", item: "Comunicação de acidente ou incidente: registro formal dos últimos 30 dias" },
+    ],
+    "Monitoramento Ambiental Perimetral": [
+      { id: "at_m1", item: "Poços de monitoramento de água subterrânea (se existentes): tampados, acessíveis e identificados" },
+      { id: "at_m2", item: "Laudos de monitoramento de água subterrânea: periodicidade conforme condicionante da licença" },
+      { id: "at_m3", item: "Área de influência do aterro: ausência de vegetação com sinais de fitotoxicidade" },
+      { id: "at_m4", item: "Monitoramento de odor nos limites do aterro: nenhuma reclamação registrada recentemente" },
+      { id: "at_m5", item: "Relatório de monitoramento enviado à SEMAD-GO dentro do prazo da licença" },
+    ],
+    "Documentação Legal e Licenciamento": [
+      { id: "at_doc1", item: "Licença Ambiental de Operação (LAO) válida e afixada na área" },
+      { id: "at_doc2", item: "ART (Anotação de Responsabilidade Técnica) do profissional responsável – vigente" },
+      { id: "at_doc3", item: "Plano de Controle Ambiental (PCA) disponível e atualizado" },
+      { id: "at_doc4", item: "Registro no SINIR (Sistema Nacional de Informações sobre Resíduos Sólidos) atualizado" },
+      { id: "at_doc5", item: "Relatório semestral ou anual enviado ao TCE/GO ou MP conforme TAC/condicionante" },
+      { id: "at_doc6", item: "Manifesto de Transporte de Resíduos (MTR) dos resíduos especiais recebidos arquivados" },
+    ],
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  // ATERRO SANITÁRIO
+  // ─────────────────────────────────────────────────────────────────
+  sanitario: {
+    "Infraestrutura Geral e Acesso": [
+      { id: "as_a1", item: "Portaria/guarita com controle de acesso: funcionamento e livro de registro" },
+      { id: "as_a2", item: "Placa de identificação: responsável técnico, número da licença, CNPJ da operadora" },
+      { id: "as_a3", item: "Balança rodoviária calibrada: certificado INMETRO vigente e última aferição" },
+      { id: "as_a4", item: "Instalações sanitárias para funcionários em bom estado (NR-18)" },
+      { id: "as_a5", item: "Vias internas pavimentadas ou estabilizadas – sem buracos ou pontos de erosão" },
+      { id: "as_a6", item: "Cerca ou muro perimetral sem falhas, com arame farpado no topo" },
+      { id: "as_a7", item: "Barreira vegetal ou quebra-vento no limite do aterro (NBR 8419 recomenda)" },
+      { id: "as_a8", item: "Sistema de iluminação nas vias internas (se exigido em licença)" },
+    ],
+    "Impermeabilização e Liner": [
+      { id: "as_i1", item: "Liner de fundo: geomembrana PEAD (2,0 mm) + geotêxtil – sem danos visíveis" },
+      { id: "as_i2", item: "Liner lateral: conformidade com projeto – ausência de deslizamentos ou exposição" },
+      { id: "as_i3", item: "Taludes encerrados com cobertura final: argila compactada + geomembrana + solo vegetal" },
+      { id: "as_i4", item: "Ausência de perfurações, rasgos ou pontos de desgaste mecânico na geomembrana exposta" },
+      { id: "as_i5", item: "Diques de proteção íntegros e sem sinais de erosão ou solapamento" },
+    ],
+    "Drenagem Pluvial e Superficial": [
+      { id: "as_dp1", item: "Canaletas perimetrais de drenagem pluvial limpas e desobstruídas" },
+      { id: "as_dp2", item: "Dissipadores de energia funcionais nas saídas das canaletas" },
+      { id: "as_dp3", item: "Ausência de erosões nos taludes finais ou encostas adjacentes" },
+      { id: "as_dp4", item: "Drenos de percolado do fundo sem sinais de entupimento (inspeção visual/fluxo)" },
+      { id: "as_dp5", item: "Separação efetiva entre drenagem pluvial limpa e drenagem de percolado" },
+      { id: "as_dp6", item: "Reservatório de percolado: nível dentro da faixa de operação – sem risco de transbordamento" },
+    ],
+    "Sistema de Coleta e Tratamento de Percolado": [
+      { id: "as_p1", item: "Bombeamento de percolado funcionando – verificar nível do reservatório antes e após" },
+      { id: "as_p2", item: "Tubulação de coleta sem entupimento ou vazamento visível" },
+      { id: "as_p3", item: "Sistema de tratamento operacional: lagoas de estabilização / UASB / membrana" },
+      { id: "as_p4", item: "Efluente final tratado: análise laboratorial com parâmetros dentro do padrão da licença" },
+      { id: "as_p5", item: "Análises físico-químicas e biológicas realizadas na periodicidade exigida (DBO, DQO, NH₄, metais)" },
+      { id: "as_p6", item: "Ausência de odor excessivo na área de tratamento de percolado" },
+      { id: "as_p7", item: "Descarte final do efluente tratado: corpo receptor autorizado e com vazão adequada" },
+      { id: "as_p8", item: "Laudos do tratamento do percolado: emitidos por laboratório acreditado (INMETRO/CGCRE)" },
+    ],
+    "Sistema de Drenagem e Queima de Biogás": [
+      { id: "as_g1", item: "Rede de drenos de biogás: todos os pontos desobstruídos e sem obstrução mecânica" },
+      { id: "as_g2", item: "Flare (queimador de biogás): operacional, sem falhas estruturais e com temperatura de queima" },
+      { id: "as_g3", item: "Medição periódica de CH₄, CO₂, H₂S: laudos atualizados e dentro do prazo" },
+      { id: "as_g4", item: "Ausência de chamas espontâneas ou pontos quentes na superfície das células" },
+      { id: "as_g5", item: "Geração de energia elétrica a partir do biogás (se instalado): operação verificada" },
+      { id: "as_g6", item: "Mapa atualizado dos drenos de biogás disponível para consulta" },
+    ],
+    "Operação e Compactação das Células": [
+      { id: "as_op1", item: "Frente de operação restrita: no máximo uma célula ativa por vez" },
+      { id: "as_op2", item: "Cobertura diária com solo (mínimo 15-20 cm) conforme NBR 8419" },
+      { id: "as_op3", item: "Compactação adequada dos resíduos: equipamento operacional e densidade visível" },
+      { id: "as_op4", item: "Controle de entrada: somente resíduos autorizados na licença – verificar documentação" },
+      { id: "as_op5", item: "Ausência de RSS (Resíduos de Serviços de Saúde) na frente ativa" },
+      { id: "as_op6", item: "Planilha de controle diário de pesagem: atualizada, assinada e arquivada" },
+      { id: "as_op7", item: "Controle de acesso de resíduos de outros municípios (se aplicável): autorização formal" },
+    ],
+    "Monitoramento Ambiental": [
+      { id: "as_ma1", item: "Poços de monitoramento de água subterrânea: acessíveis, tampados e identificados (mínimo 4 poços)" },
+      { id: "as_ma2", item: "Laudos de monitoramento de água subterrânea atualizados (semestral – parâmetros CONAMA 420)" },
+      { id: "as_ma3", item: "Monitoramento de gases no entorno (trimestral): CH₄, CO₂, H₂S nos pontos estabelecidos" },
+      { id: "as_ma4", item: "Monitoramento de ruído e odor (se exigido em licença): resultados dentro do limite" },
+      { id: "as_ma5", item: "Relatórios de monitoramento enviados à SEMAD-GO: periodicidade conforme LAO" },
+      { id: "as_ma6", item: "Monitoramento de vegetação na área de influência: ausência de fitotoxicidade" },
+      { id: "as_ma7", item: "Ausência de contaminação do solo na área de influência (análise pontual se suspeito)" },
+    ],
+    "Documentação, Licenciamento e Conformidade": [
+      { id: "as_doc1", item: "Licença Ambiental de Operação (LAO): válida, afixada na guarita e cópia digital acessível" },
+      { id: "as_doc2", item: "ART do responsável técnico do aterro: vigente e com escopo completo" },
+      { id: "as_doc3", item: "Plano de Encerramento do Aterro disponível e com cronograma atualizado" },
+      { id: "as_doc4", item: "PGRS (Plano de Gerenciamento de Resíduos Sólidos) atualizado" },
+      { id: "as_doc5", item: "Registro no SINIR: dados de pesagem e operação atualizados dentro do prazo" },
+      { id: "as_doc6", item: "Registro de acidentes e incidentes dos últimos 12 meses: livro ou sistema digital" },
+      { id: "as_doc7", item: "Seguro de responsabilidade civil ambiental (se exigido em licença): vigente" },
+    ],
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  // PRAD – PLANO DE RECUPERAÇÃO DE ÁREAS DEGRADADAS
+  // ─────────────────────────────────────────────────────────────────
+  prad: {
+    "Cobertura do Solo e Estabilidade Geral": [
+      { id: "pr_c1", item: "Inspeção visual da cobertura argilosa: ausência de trincas longitudinais ou transversais" },
+      { id: "pr_c2", item: "Ausência de afundamentos, recalques ou depressões na superfície (diâmetro > 30 cm)" },
+      { id: "pr_c3", item: "Ausência de exposição de resíduos na cobertura final (qualquer ponto)" },
+      { id: "pr_c4", item: "Estabilidade dos taludes: inclinação conforme projeto PRAD – sem movimentos de massa" },
+      { id: "pr_c5", item: "Ausência de processos erosivos ativos: sulcos, ravinas, voçorocas em formação" },
+      { id: "pr_c6", item: "Camada de solo vegetal sobre cobertura argilosa: espessura mínima conforme projeto" },
+      { id: "pr_c7", item: "Ausência de formação de bolsões (recalque diferencial – possível degradação interna)" },
+      { id: "pr_c8", item: "Georreferenciamento dos pontos críticos identificados nesta vistoria" },
+    ],
+    "Percolado e Contaminação do Solo": [
+      { id: "pr_per1", item: "Ausência de afloramento de chorume na superfície (coloração escura, viscosa, odor)" },
+      { id: "pr_per2", item: "Ausência de manchas escuras (coloração enegrecida) no solo da área" },
+      { id: "pr_per3", item: "Ausência de odor característico de percolado fora da área de controle" },
+      { id: "pr_per4", item: "Sistema de coleta de percolado (se instalado): caixa de inspeção acessível e funcional" },
+      { id: "pr_per5", item: "Nível de percolado na caixa coletora: dentro do limite operacional" },
+      { id: "pr_per6", item: "Ausência de percolado ou pluma de contaminação no curso d'água adjacente" },
+      { id: "pr_per7", item: "Ausência de coloração anormal ou odor no solo no perímetro da área" },
+    ],
+    "Drenagem Pluvial e Escoamento": [
+      { id: "pr_dp1", item: "Canaletas perimetrais de drenagem pluvial: desobstruídas e sem erosão nas bordas" },
+      { id: "pr_dp2", item: "Dissipadores de energia nas saídas das canaletas: íntegros e funcionais" },
+      { id: "pr_dp3", item: "Escoamento superficial: direcionado corretamente para fora da área degradada" },
+      { id: "pr_dp4", item: "Ausência de infiltração de água pluvial por fissuras na cobertura argilosa" },
+      { id: "pr_dp5", item: "Monitoramento do corpo hídrico próximo após chuva intensa (coloração, odor, macrófitas)" },
+      { id: "pr_dp6", item: "Talvegues e saídas de água: desobstruídos, sem acúmulo de material" },
+      { id: "pr_dp7", item: "Bermas intermediárias (se previstas no projeto): íntegras e funcionais" },
+    ],
+    "Monitoramento de Gases": [
+      { id: "pr_g1", item: "Drenos verticais de gás: presentes em todos os pontos do projeto e desobstruídos" },
+      { id: "pr_g2", item: "Caps/tampas dos drenos em posição correta – sem danos ou ausência" },
+      { id: "pr_g3", item: "Teste manual de pressão nos drenos: ausência de pressão anormal ao destampar" },
+      { id: "pr_g4", item: "Medição de CH₄: realizada com equipamento calibrado – registrar valor medido (% vol)" },
+      { id: "pr_g5", item: "Medição de CO₂: realizada com equipamento calibrado – registrar valor medido (% vol)" },
+      { id: "pr_g6", item: "Ausência de chamas espontâneas ou pontos quentes na superfície" },
+      { id: "pr_g7", item: "Ausência de odor de H₂S (sulfídrico) perceptível a mais de 5 metros dos drenos" },
+      { id: "pr_g8", item: "Registro dos resultados conforme ABNT NBR 8419:1992 e planilha de monitoramento" },
+    ],
+    "Monitoramento de Águas Subterrâneas": [
+      { id: "pr_as1", item: "Poços de monitoramento: acessíveis, tampados com cadeado e identificados com plaqueta" },
+      { id: "pr_as2", item: "Número de poços conforme projeto PRAD (mín. 1 a montante, 2 a jusante)" },
+      { id: "pr_as3", item: "Coleta das amostras: realizada por laboratório acreditado (INMETRO/CGCRE) no período" },
+      { id: "pr_as4", item: "Parâmetros analisados: pH, condutividade, DBO, DQO, metais pesados, coliformes, NH₄" },
+      { id: "pr_as5", item: "Resultados dentro dos limites da Resolução CONAMA 420/2009 – Grupo de avaliação" },
+      { id: "pr_as6", item: "Laudos emitidos e enviados à SEMAD-GO ou órgão competente dentro do prazo" },
+      { id: "pr_as7", item: "Ausência de indício de contaminação na área de influência hidrogeológica" },
+      { id: "pr_as8", item: "Nível d'água nos poços: registrado e comparado com histórico de medições" },
+    ],
+    "Revegetação, Flora e Cobertura Vegetal": [
+      { id: "pr_rv1", item: "Taxa de sobrevivência das mudas: avaliação visual (>80% = satisfatório; 60-79% = alerta; <60% = crítico)" },
+      { id: "pr_rv2", item: "Cobertura vegetal: percentual de cobertura sobre área total – estimar visualmente" },
+      { id: "pr_rv3", item: "Espécies plantadas conforme lista do PRAD: presença das espécies nativas estabelecidas" },
+      { id: "pr_rv4", item: "Ausência de espécies invasoras dominantes (braquiária, leucena, capim-gordura em >30% da área)" },
+      { id: "pr_rv5", item: "Ausência de pragas: formigas cortadeiras com olheiros ativos próximos às mudas" },
+      { id: "pr_rv6", item: "Ausência de doenças visíveis: clorose (amarelamento), manchas necróticas, seca de ponteiros" },
+      { id: "pr_rv7", item: "Necessidade de replantio: identificar número estimado de mudas a repor" },
+      { id: "pr_rv8", item: "Necessidade de adubação ou calagem: verificar sintomas de deficiência nutricional" },
+      { id: "pr_rv9", item: "Irrigação (se prevista no PRAD): sistema operacional e programado corretamente" },
+      { id: "pr_rv10", item: "Altura média das plantas estabelecidas: registrar espécies principais e estatura" },
+    ],
+    "Cercamento, Segurança e Controle de Acesso": [
+      { id: "pr_seg1", item: "Cerca perimetral 100% íntegra: sem aberturas, falhas ou pontos de invasão" },
+      { id: "pr_seg2", item: "Portão de acesso com cadeado ou lacre de controle" },
+      { id: "pr_seg3", item: "Placas de sinalização visíveis: 'Área Monitorada', 'Proibido Descartar Resíduos', 'PRAD em Recuperação'" },
+      { id: "pr_seg4", item: "Ausência de deposição irregular de novos resíduos (qualquer tipo) na área do PRAD" },
+      { id: "pr_seg5", item: "Ausência de acesso de animais de grande porte (bovinos, equinos) que causem pisoteio" },
+      { id: "pr_seg6", item: "Ausência de catadores ou ocupação irregular na área" },
+      { id: "pr_seg7", item: "Ausência de queimadas ou sinais de fogo recente na vegetação da área" },
+    ],
+    "Conformidade do PRAD com o Projeto e Cronograma": [
+      { id: "pr_proj1", item: "Etapa atual do PRAD: confere com o cronograma aprovado pela SEMAD-GO" },
+      { id: "pr_proj2", item: "Marcos de recuperação previstos: cumprimento das metas do trimestre/semestre" },
+      { id: "pr_proj3", item: "Ortomosaico ou registro fotográfico panorâmico: realizado nesta vistoria (georreferenciado)" },
+      { id: "pr_proj4", item: "Relatório de monitoramento: em elaboração conforme periodicidade do PRAD" },
+      { id: "pr_proj5", item: "Necessidade de revisão do PRAD: identificar se condições de campo diferem do projeto original" },
+      { id: "pr_proj6", item: "Comunicação formal das não conformidades ao gestor municipal: enviada no prazo" },
+    ],
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  // RESÍDUOS DE CONSTRUÇÃO CIVIL
+  // ─────────────────────────────────────────────────────────────────
+  rcc: {
+    "Controle de Acesso e Recebimento": [
+      { id: "rc_a1", item: "Portaria operacional: controle de entrada por veículo e horário" },
+      { id: "rc_a2", item: "Registro de entrada: placa, gerador, CNPJ/CPF, natureza do resíduo, volume estimado (m³), data/hora" },
+      { id: "rc_a3", item: "MTR (Manifesto de Transporte de Resíduos) do transportador: verificar e arquivar cópia" },
+      { id: "rc_a4", item: "Orientação efetiva ao transportador sobre local correto de descarte de cada classe" },
+      { id: "rc_a5", item: "Balança ou sistema de controle de volume: operacional e calibrado" },
+      { id: "rc_a6", item: "Ausência de resíduos domiciliares (RSU) misturados ao RCC no recebimento" },
+      { id: "rc_a7", item: "Ausência de resíduos perigosos: tintas, solventes, amianto, óleos – verificar sistematicamente" },
+    ],
+    "Triagem e Classificação (CONAMA 307/2002)": [
+      { id: "rc_cl1", item: "Classe A (concreto, tijolo, cerâmica, argamassa): segregado em baia própria e identificada" },
+      { id: "rc_cl2", item: "Classe B (plásticos, metais, papel, madeira, gesso classe B): segregado para reuso/reciclagem" },
+      { id: "rc_cl3", item: "Classe C (EPS, gesso tipo C, cal): identificado e com destinação específica registrada" },
+      { id: "rc_cl4", item: "Classe D (tintas, solventes, verniz, amianto, resíduos perigosos de reformas): NÃO deve estar presente – verificar rigorosamente" },
+      { id: "rc_cl5", item: "Placas de identificação de cada baia/área por classe: legíveis e com cores-padrão" },
+      { id: "rc_cl6", item: "Material Classe A: sendo beneficiado (triturado) ou destinado como aterro de regularização" },
+      { id: "rc_cl7", item: "Registro da quantidade triada por classe: planilha de controle atualizada" },
+    ],
+    "Disposição, Pátio e Segregação": [
+      { id: "rc_d1", item: "Material disposto dentro dos limites da área licenciada – sem extrapolação do perímetro" },
+      { id: "rc_d2", item: "Ausência de espalhamento irregular além das baias demarcadas" },
+      { id: "rc_d3", item: "Baias ou células de segregação demarcadas: pintadas no pátio ou com barreira física" },
+      { id: "rc_d4", item: "Altura máxima de empilhamento: dentro do limite de segurança (máx. 3-4 m ou conforme licença)" },
+      { id: "rc_d5", item: "Ausência de incêndio, risco de combustão ou material carbonizado no pátio" },
+      { id: "rc_d6", item: "Área total utilizada: dentro da capacidade máxima da licença (volume disponível)" },
+      { id: "rc_d7", item: "Equipamentos de movimentação (retroescavadeira, pá): operacionais e com ART" },
+    ],
+    "Drenagem, Impermeabilização e Controle Ambiental": [
+      { id: "rc_di1", item: "Sistema de drenagem pluvial operacional: sem represamento ou acúmulo de água" },
+      { id: "rc_di2", item: "Ausência de poças de água contaminada no pátio (coloração escura ou sedimento suspeito)" },
+      { id: "rc_di3", item: "Impermeabilização de base (se exigida em licença): íntegra e sem afloramento de lixiviado" },
+      { id: "rc_di4", item: "Ausência de erosão nas bordas ou taludes da área" },
+      { id: "rc_di5", item: "Canaletas perimetrais desobstruídas e com escoamento adequado" },
+      { id: "rc_di6", item: "Controle de material particulado (poeira) em dias secos: umidificação ou cobertura" },
+      { id: "rc_di7", item: "Ausência de lixiviado ou material líquido contaminante no solo adjacente" },
+    ],
+    "Valorização e Destinação Final": [
+      { id: "rc_val1", item: "Britador / reciclador de RCC (se existente): operacional e com produção registrada" },
+      { id: "rc_val2", item: "Reciclado gerado (brita reciclada, rachão): destinação formal registrada (guia, nota fiscal)" },
+      { id: "rc_val3", item: "Parceria com cooperativas ou empresas de reciclagem de metais/plásticos: contrato vigente" },
+      { id: "rc_val4", item: "Percentual de valorização do RCC recebido: calcular conforme dados de entrada e saída" },
+      { id: "rc_val5", item: "Destinação final do material não reciclável: área licenciada (aterro classe IIA)" },
+    ],
+    "Documentação, Licença e Conformidade": [
+      { id: "rc_doc1", item: "Licença Ambiental de Operação (LAO) válida: afixada na área e cópia acessível" },
+      { id: "rc_doc2", item: "Plano Municipal de Gerenciamento de RCC (PMGRCC): atualizado conforme CONAMA 307" },
+      { id: "rc_doc3", item: "Relatório de disposição: enviado ao órgão ambiental na periodicidade exigida" },
+      { id: "rc_doc4", item: "Cadastro no SISNAMA/SINIR: dados atualizados" },
+      { id: "rc_doc5", item: "ART do responsável técnico da operação da área: vigente e com escopo adequado" },
+      { id: "rc_doc6", item: "Contratos com geradores (grandes geradores com PGRCC próprio): arquivados" },
+    ],
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  // COLETA SELETIVA
+  // ─────────────────────────────────────────────────────────────────
+  coleta: {
+    "Infraestrutura e Acesso ao Sistema": [
+      { id: "cs_inf1", item: "Plano Municipal de Coleta Seletiva (PCMS) vigente: disponível para consulta, com cronograma atualizado" },
+      { id: "cs_inf2", item: "CNPJ/contrato da cooperativa ou empresa operadora: regularidade fiscal verificada" },
+      { id: "cs_inf3", item: "Licença ou autorização ambiental do galpão de triagem: vigente e afixada no local" },
+      { id: "cs_inf4", item: "Alvará de funcionamento do galpão / cooperativa: válido" },
+      { id: "cs_inf5", item: "Mapa ou croqui das rotas de coleta disponível e atualizado conforme PCMS" },
+      { id: "cs_inf6", item: "Registro no Cadastro Nacional de Catadores (CIISC) ou órgão equivalente estadual" },
+      { id: "cs_inf7", item: "Contrato ou convênio formalizado entre Prefeitura e Cooperativa: vigente e com cláusulas de metas" },
+      { id: "cs_inf8", item: "Relatório mensal de atividades entregue à Secretaria de Meio Ambiente dentro do prazo" },
+    ],
+    "PEVs – Pontos de Entrega Voluntária: Infraestrutura": [
+      { id: "cs_pev1", item: "Relação atualizada de todos os PEVs instalados: número, endereço e tipo de resíduo aceito" },
+      { id: "cs_pev2", item: "Estado físico geral: ausência de amassados, corrosão avançada, grafite ou danos estruturais nos contentores" },
+      { id: "cs_pev3", item: "Identificação e cores conforme PNRS: azul (papel/papelão), vermelho (plástico), amarelo (metal), verde (vidro), marrom (orgânico)" },
+      { id: "cs_pev4", item: "Capacidade volumétrica adequada ao fluxo de resíduos do entorno: sem transbordamento frequente" },
+      { id: "cs_pev5", item: "PEV acessível: calçada livre, sem obstáculos, sem veículos obstruindo o acesso ao contentor" },
+      { id: "cs_pev6", item: "Cobertura/tampa em bom estado: protege o interior da chuva e impede acesso de vetores" },
+      { id: "cs_pev7", item: "Iluminação no entorno do PEV: visibilidade noturna adequada (posto iluminado ou iluminação pública próxima)" },
+      { id: "cs_pev8", item: "Coordenadas GPS de cada PEV registradas (latitude e longitude): conferidas em campo" },
+      { id: "cs_pev9", item: "Sinalização de uso visível: instruções de quais materiais são aceitos e quais são proibidos" },
+      { id: "cs_pev10", item: "Avaliação de permanência do ponto: dados de uso justificam manutenção do local OU recomendar realocação" },
+    ],
+    "PEVs – Operação e Condição dos Resíduos": [
+      { id: "cs_pop1", item: "PEV e entorno imediato: limpo, sem resíduos espalhados no chão ou bolsões irregulares adjacentes" },
+      { id: "cs_pop2", item: "Ausência de contaminação cruzada grave: resíduos orgânicos ou RSU domiciliar comum dentro do PEV seletivo" },
+      { id: "cs_pop3", item: "Adesão da comunidade: PEV com material compatível no interior, indicando participação regular" },
+      { id: "cs_pop4", item: "Frequência de coleta no PEV: adequada ao volume depositado – sem transbordamento por espaçamento longo" },
+      { id: "cs_pop5", item: "Ausência de descarte de resíduos volumosos (móveis, eletrodomésticos) junto ao PEV" },
+      { id: "cs_pop6", item: "Ausência de RSS (resíduos de serviços de saúde: seringas, frascos de medicamento) no PEV" },
+      { id: "cs_pop7", item: "Ausência de resíduos de construção civil (entulho, cerâmica, tijolos) junto ao PEV" },
+      { id: "cs_pop8", item: "Limpeza do entorno do PEV realizada pelo operador municipal: frequência conforme PCMS" },
+    ],
+    "Rotas de Coleta – Veículos e Operação": [
+      { id: "cs_rot1", item: "Rotas cumpridas conforme cronograma do PCMS: todos os bairros definidos atendidos no período" },
+      { id: "cs_rot2", item: "Frequência de coleta por zona: mínimo semanal nas áreas de alta densidade (conforme Decreto GO 10.367/2021)" },
+      { id: "cs_rot3", item: "Cobertura da zona rural / distritos: frequência e rotas conforme PCMS e demanda verificada" },
+      { id: "cs_rot4", item: "Veículo coletor em bom estado: lataria íntegra, pneus calibrados, sem vazamentos de óleo ou fluidos" },
+      { id: "cs_rot5", item: "Veículo com identificação visual obrigatória: logomarca municipal, inscrição 'Coleta Seletiva', cores da PNRS" },
+      { id: "cs_rot6", item: "Documentação do veículo em dia: CRLV, seguro, licenciamento, vistoria – verificar fisicamente" },
+      { id: "cs_rot7", item: "Carroceria / baú do veículo: limpa, sem resíduos de rotas anteriores, sem odor excessivo" },
+      { id: "cs_rot8", item: "Motorista/coletor com CNH compatível com a categoria do veículo" },
+      { id: "cs_rot9", item: "EPI do coletor em uso durante a operação: colete refletivo, luva de raspa, bota impermeável com solado antiderrapante" },
+      { id: "cs_rot10", item: "Horário de coleta respeitado: conforme o estabelecido no PCMS e preferências da comunidade" },
+      { id: "cs_rot11", item: "Registro de ocorrências da rota preenchido pelo motorista: data, quantidade estimada e ocorrências" },
+      { id: "cs_rot12", item: "Km percorrido e tempo de rota: registrados pelo condutor para controle de produtividade" },
+    ],
+    "Galpão de Triagem – Infraestrutura e Segurança": [
+      { id: "cs_gal1", item: "Estrutura do galpão íntegra: cobertura sem goteiras, piso impermeável, paredes em bom estado" },
+      { id: "cs_gal2", item: "Ventilação adequada: janelas, exaustores, venezianas ou aberturas suficientes (NR-17: mín. 1/8 da área de piso)" },
+      { id: "cs_gal3", item: "Iluminação natural e/ou artificial suficiente nas bancadas de triagem (mín. 300 lux – NR-17)" },
+      { id: "cs_gal4", item: "Ausência de risco elétrico: fiação sem exposição, quadros elétricos com proteção IP adequada, DPS instalado" },
+      { id: "cs_gal5", item: "Extintores de incêndio no galpão: pressurizado e dentro da validade, no número exigido por área" },
+      { id: "cs_gal6", item: "Sinalização de segurança: saídas de emergência, planta de emergência, EPI obrigatório afixados" },
+      { id: "cs_gal7", item: "Instalações sanitárias para catadores: banheiros masculino e feminino com água, sabão e papel (NR-24)" },
+      { id: "cs_gal8", item: "Vestiário para troca de roupa: separado do ambiente de triagem, com armários individuais (NR-24)" },
+      { id: "cs_gal9", item: "Área de descanso / refeitório disponível e higienizado (NR-24)" },
+      { id: "cs_gal10", item: "Kit de primeiros socorros disponível e completo no galpão" },
+    ],
+    "Galpão de Triagem – Operação e Materiais": [
+      { id: "cs_gop1", item: "Limpeza geral do galpão: piso varrido, paredes sem acúmulo, área de triagem organizada e sem vetores" },
+      { id: "cs_gop2", item: "Baias ou áreas de estocagem identificadas por tipo de material: papelão, PET, alumínio, ferro, vidro etc." },
+      { id: "cs_gop3", item: "Materiais aguardando comercialização: identificados por fração, protegidos da chuva (cobertura ou lona)" },
+      { id: "cs_gop4", item: "Área de descarga organizada: material recém-chegado segregado e não misturado ao já triado" },
+      { id: "cs_gop5", item: "Rejeitos da triagem: segregados em caçamba, container ou área específica – sem mistura com recicláveis" },
+      { id: "cs_gop6", item: "Destinação dos rejeitos: comprovante de envio ao aterro / transbordo autorizado (guia de pesagem ou MTR)" },
+      { id: "cs_gop7", item: "Balança de pesagem: aferida pelo INMETRO/IPEM – certificado de aferição vigente exposto" },
+      { id: "cs_gop8", item: "Prensa / enfardadeira (se instalada): operacional, ART de instalação arquivada, operadores treinados" },
+      { id: "cs_gop9", item: "Registro de saída de materiais: nota fiscal, certificado de destinação ou guia de transporte emitida por carga" },
+      { id: "cs_gop10", item: "Planilha de controle de pesagem por fração (entrada e saída): atualizada diariamente e disponível para vistoria" },
+      { id: "cs_gop11", item: "Ausência de materiais perigosos (pilhas, baterias, lâmpadas, produtos químicos) misturados aos recicláveis" },
+      { id: "cs_gop12", item: "Destinação separada para REEE (resíduos eletroeletrônicos): contrato com empresa de logística reversa vigente" },
+    ],
+    "Catadores – Condições de Trabalho, Saúde e Renda": [
+      { id: "cs_cat1", item: "Relação nominal de catadores ativos atualizada: nome, função, data de ingresso – arquivo na cooperativa" },
+      { id: "cs_cat2", item: "EPI – luvas de raspa ou vaqueta: fornecidas, em bom estado e uso efetivo durante a triagem" },
+      { id: "cs_cat3", item: "EPI – botas impermeáveis com biqueira de aço: fornecidas e uso efetivo durante descarga e triagem" },
+      { id: "cs_cat4", item: "EPI – colete de identificação ou avental: uso efetivo; roupa de trabalho adequada e higienizada" },
+      { id: "cs_cat5", item: "EPI – máscara PFF2 ou N95: fornecida e disponível para triagem de materiais com odor ou poeira" },
+      { id: "cs_cat6", item: "EPI – óculos de proteção: disponíveis para operações de prensa e beneficiamento" },
+      { id: "cs_cat7", item: "Entrevista com catadores: relato de condições de trabalho satisfatórias e ausência de pressão ou assédio" },
+      { id: "cs_cat8", item: "Ausência de queixas de saúde ocupacional: LER/DORT, problemas respiratórios, ferimentos frequentes" },
+      { id: "cs_cat9", item: "Capacitação / treinamento realizado nos últimos 6 meses: tema (segurança, triagem, comercialização) e data registrados" },
+      { id: "cs_cat10", item: "Cadastro dos catadores no CadÚnico / CNIS atualizado" },
+      { id: "cs_cat11", item: "Renda mensal distribuída conforme rateio interno: ata da assembleia ou registro de reunião arquivado" },
+      { id: "cs_cat12", item: "Ausência de trabalho infantil ou de menores no galpão de triagem (verificar pessoalmente)" },
+    ],
+    "Pesagem e Controle de Materiais Triados": [
+      { id: "cs_mat1", item: "Papelão ondulado: pesagem realizada, resultado registrado na planilha mensal (kg/mês)" },
+      { id: "cs_mat2", item: "Papel branco de 1ª / papel misto / jornal: pesagem registrada separadamente (kg/mês)" },
+      { id: "cs_mat3", item: "PET transparente (1): pesagem registrada (kg/mês)" },
+      { id: "cs_mat4", item: "PET colorido / PET óleo (3): pesagem registrada (kg/mês)" },
+      { id: "cs_mat5", item: "PEAD rígido – baldes, bombonas, galões (2): pesagem registrada (kg/mês)" },
+      { id: "cs_mat6", item: "Plástico filme / sacaria / embalagem flexível (4): pesagem registrada (kg/mês)" },
+      { id: "cs_mat7", item: "Lona agrícola / big bag / ráfia / encerado: pesagem registrada (kg/mês)" },
+      { id: "cs_mat8", item: "Tetra Pak – embalagem longa vida: pesagem registrada e destinação à reciclagem especializada (kg/mês)" },
+      { id: "cs_mat9", item: "Latinhas de alumínio: pesagem registrada (kg/mês)" },
+      { id: "cs_mat10", item: "Ferro e aço / latas de aço (sucata ferrosa): pesagem registrada (kg/mês)" },
+      { id: "cs_mat11", item: "Cobre / bronze / metais nobres: pesagem registrada e nota fiscal de venda arquivada (kg/mês)" },
+      { id: "cs_mat12", item: "Vidro (cacos, garrafas, potes): pesagem registrada e destinação formal – sem descarte irregular (kg/mês)" },
+      { id: "cs_mat13", item: "Total de rejeitos gerados na triagem: pesagem registrada (kg/mês) e % calculado sobre o total recebido" },
+      { id: "cs_mat14", item: "Receita mensal da comercialização: totalizada por fração e registrada em livro-caixa ou sistema da cooperativa" },
+    ],
+    "Educação Ambiental e Engajamento Comunitário": [
+      { id: "cs_ea1", item: "Materiais de comunicação atualizados: panfletos, cartazes, redes sociais com dias/horários de coleta vigentes" },
+      { id: "cs_ea2", item: "Ações de educação ambiental realizadas no período: escolas, associações de bairro, igrejas, feiras (registrar datas e público)" },
+      { id: "cs_ea3", item: "Atendimento a reclamações: número de registros na ouvidoria ou prefeitura – verificar e registrar resposta" },
+      { id: "cs_ea4", item: "Campanha anti-contaminação em PEVs com maior índice de rejeito: realizada ou planejada com prazo" },
+      { id: "cs_ea5", item: "Adesão domiciliar observada in loco: % estimado de moradores que separam corretamente na zona vistoriada" },
+      { id: "cs_ea6", item: "Parceria com escolas: programa de visita ao galpão ou ações de sensibilização realizadas" },
+      { id: "cs_ea7", item: "Divulgação dos resultados mensais (peso coletado, nº de catadores, receita): publicada em mural ou redes" },
+    ],
+    "Logística Reversa e Resíduos Especiais": [
+      { id: "cs_lr1", item: "Ponto de coleta de eletrônicos (REEE – Resolução CONAMA 401/2008 e Lei 12.305/2010): operacional e com contrato vigente" },
+      { id: "cs_lr2", item: "Ponto de coleta de lâmpadas fluorescentes / LEDs: contrato com empresa especializada (ABNT NBR 10004 Classe I)" },
+      { id: "cs_lr3", item: "Ponto de coleta de pilhas e baterias: recipiente próprio no galpão ou parceria com comércio (CONAMA 401/2008)" },
+      { id: "cs_lr4", item: "Ponto de descarte de medicamentos vencidos: parceria formalizada com farmácias ou posto de saúde" },
+      { id: "cs_lr5", item: "Ponto de coleta de óleo de fritura usado: recipientes disponíveis e coleta com empresa licenciada" },
+      { id: "cs_lr6", item: "Ecopontos municipais (resíduos volumosos, poda, móveis): funcionamento e controle de acesso verificados" },
+      { id: "cs_lr7", item: "Destinação de REEE, pilhas e lâmpadas: certificado ou comprovante de entrega à empresa de logística reversa arquivado" },
+      { id: "cs_lr8", item: "Dados de logística reversa declarados no SINIR (mín. anual): verificar acesso e atualização" },
+    ],
+    "Metas, Indicadores e Conformidade Legal": [
+      { id: "cs_leg1", item: "Meta de cobertura urbana atingida: % da população atendida ≥ exigência mínima do Decreto GO 10.367/2021 (≥15%)" },
+      { id: "cs_leg2", item: "Taxa de desvio de resíduos do aterro (índice de recuperação): calculada e registrada no período" },
+      { id: "cs_leg3", item: "Dados de produção mensais (kg por fração) declarados no SINIR: acesso e atualização verificados" },
+      { id: "cs_leg4", item: "Conformidade com ABNT NBR 13463:1995 – Coleta de resíduos sólidos: verificação geral do sistema" },
+      { id: "cs_leg5", item: "Lei Municipal de Coleta Seletiva: existe e está em vigor – número e data informados" },
+      { id: "cs_leg6", item: "Prazo de adequação progressiva ao Decreto Estadual 10.367/2021 sendo cumprido (meta 2024-2026)" },
+      { id: "cs_leg7", item: "Relatório de Monitoramento PCMS enviado ao órgão ambiental competente (SEMAD-GO / MP) dentro do prazo" },
+      { id: "cs_leg8", item: "Inexistência de auto de infração, embargo ou notificação ambiental vigente relacionada à coleta seletiva" },
+    ],
+  },
+};
+
+// ══════════════════════════════════════════════════════════════════════
+// CAMPOS QUANTITATIVOS POR MÓDULO
+// ══════════════════════════════════════════════════════════════════════
+
+const CAMPOS_QUANTITATIVOS = {
+  aterro: [
+    { id: "q_valas_ativas", label: "Nº de valas ativas operando", unit: "valas", type: "number" },
+    { id: "q_valas_total", label: "Nº total de valas (projeto)", unit: "valas", type: "number" },
+    { id: "q_perc_cobertura", label: "Cobertura diária estimada", unit: "cm", type: "number", ref: "Mín. 20 cm – ABNT" },
+    { id: "q_vol_percolado", label: "Volume percolado na caixa", unit: "m³", type: "number" },
+    { id: "q_rsu_dia", label: "Volume/peso de RSU recebido", unit: "ton/dia", type: "number" },
+    { id: "q_temp_amb", label: "Temperatura ambiente", unit: "°C", type: "number" },
+    { id: "q_prox_chuva", label: "Dias desde última chuva", unit: "dias", type: "number" },
+  ],
+  sanitario: [
+    { id: "q_celulas_ativas", label: "Células ativas", unit: "células", type: "number" },
+    { id: "q_vida_util", label: "Vida útil restante estimada", unit: "meses", type: "number" },
+    { id: "q_rsu_mes", label: "Total RSU recebido no mês", unit: "ton/mês", type: "number" },
+    { id: "q_percolado_nivel", label: "Nível do reservatório de percolado", unit: "m", type: "number" },
+    { id: "q_dbo_afluente", label: "DBO afluente (último laudo)", unit: "mg/L", type: "number" },
+    { id: "q_dbo_efluente", label: "DBO efluente tratado (último laudo)", unit: "mg/L", type: "number" },
+    { id: "q_ch4_pct", label: "Concentração CH₄ medida", unit: "% vol", type: "number" },
+  ],
+  prad: [
+    { id: "q_cobertura_pct", label: "% cobertura vegetal estimada", unit: "%", type: "number", ref: "Meta: ≥ 70% (Fase 2)" },
+    { id: "q_sobrev_mudas", label: "Taxa de sobrevivência mudas", unit: "%", type: "number", ref: "Meta: ≥ 80%" },
+    { id: "q_ch4_dreno", label: "CH₄ nos drenos (medido)", unit: "% vol", type: "number" },
+    { id: "q_co2_dreno", label: "CO₂ nos drenos (medido)", unit: "% vol", type: "number" },
+    { id: "q_nivel_poco_mon", label: "Nível d'água no poço PM-01", unit: "m", type: "number" },
+    { id: "q_area_recuperada", label: "Área em recuperação avaliada", unit: "ha", type: "number" },
+    { id: "q_mudas_replantio", label: "Mudas necessárias para replantio", unit: "un.", type: "number" },
+  ],
+  rcc: [
+    { id: "q_vol_recebido", label: "Volume recebido no período", unit: "m³", type: "number" },
+    { id: "q_vol_reciclado", label: "Volume reciclado/beneficiado", unit: "m³", type: "number" },
+    { id: "q_vol_destinado", label: "Volume destinado a aterro", unit: "m³", type: "number" },
+    { id: "q_area_utilizada", label: "Área do pátio utilizada", unit: "%", type: "number" },
+    { id: "q_veiculos_mes", label: "Nº de veículos recebidos no mês", unit: "veículos", type: "number" },
+  ],
+  coleta: [
+    { id: "q_kg_mes", label: "Total coletado no período", unit: "kg", type: "number", ref: "PNRS / Decreto GO" },
+    { id: "q_pop_atendida", label: "Pop. atendida pela coleta seletiva", unit: "hab.", type: "number" },
+    { id: "q_n_pevs", label: "Nº de PEVs ativos vistoriados", unit: "PEVs", type: "number" },
+    { id: "q_viagens_mes", label: "Nº de viagens realizadas no mês", unit: "viagens", type: "number" },
+    { id: "q_km_rota", label: "Km total percorrido (rotas)", unit: "km", type: "number" },
+    { id: "q_rejeito_pct", label: "% de rejeito na triagem", unit: "%", type: "number", ref: "Meta: < 30% rejeito" },
+    { id: "q_catadores_ativos", label: "Catadores ativos no galpão", unit: "pessoas", type: "number" },
+  ],
+};
+
+// ══════════════════════════════════════════════════════════════════════
+// COMPONENTES UI BASE
+// ══════════════════════════════════════════════════════════════════════
+
+
+// ═══════════════════════════════════════════════
+// FIREBASE CONFIG — substitua com credenciais reais
+// ═══════════════════════════════════════════════
+const FB_CFG = {
+  apiKey: "AIzaSyASYQ31cmKdsr-HdpRu3Bpc7DJ1bV-AHpE",
+  authDomain: "queiroz-marra-vistorias-b5b6d.firebaseapp.com",
+  projectId: "queiroz-marra-vistorias-b5b6d",
+  storageBucket: "queiroz-marra-vistorias-b5b6d.firebasestorage.app",
+  messagingSenderId: "936990280713",
+  appId: "1:936990280713:web:f7a355f0592442237d7cd8"
+};
+
+// ═══════════════════════════════════════════════
+// ESTADO GLOBAL
+// ═══════════════════════════════════════════════
+let G = {
+  tab: 'home',       // home | hist
+  tela: 'home',      // home | gerenciar | vistoria | relatorio
+  modSel: null,
+  // fluxo vistoria
+  etapa: 0,          // índice dentro de ETAPAS
+  secoes: [],        // Object.keys(CHECKLIST[modSel])
+  meta: {},
+  respostas: {},
+  notas: {},
+  quant: {},
+  conclusao: {},
+  // histórico
+  histViewIdx: null,
+  cidFiltro: null,
+  // fab
+  fabOpen: false,
+  // dados
+  cidades: [],
+  historico: [],
+  // firebase
+  db: null,
+  fsOk: false,
+};
+
+// LS
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
+function loadLocal(){
+  G.cidades=lsGet('qm_cidades',JSON.parse(JSON.stringify(CIDADES_PADRAO)));
+  G.historico=lsGet('qm_historico',[]);
+}
+function saveCidades(){lsSet('qm_cidades',G.cidades)}
+function saveHistorico(){lsSet('qm_historico',G.historico)}
+
+// Firebase
+async function initFB(){
+  if(!navigator.onLine)return;
+  try{
+    const{initializeApp}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+    const{getFirestore,collection,addDoc,getDocs,query,orderBy,deleteDoc,doc}=
+      await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+    const app=initializeApp(FB_CFG);
+    G.db=getFirestore(app);G.fsOk=true;
+    window._fs={collection,addDoc,getDocs,query,orderBy,deleteDoc,doc};
+    await syncFS();
+  }catch(e){console.warn('Firebase offline')}
+}
+async function syncFS(){
+  if(!G.db||!window._fs)return;
+  try{
+    const{collection,getDocs,query,orderBy}=window._fs;
+    const snap=await getDocs(query(collection(G.db,'vistorias'),orderBy('ts','asc')));
+    const remote=snap.docs.map(d=>({...d.data(),_fsId:d.id}));
+    const ids=new Set(G.historico.filter(v=>v._fsId).map(v=>v._fsId));
+    let added=0;
+    remote.forEach(r=>{if(!ids.has(r._fsId)){G.historico.push(r);added++}});
+    if(added>0){saveHistorico();render()}
+  }catch(e){}
+}
+async function saveFS(v){
+  if(!G.db||!window._fs)return;
+  try{
+    const{collection,addDoc}=window._fs;
+    const ref=await addDoc(collection(G.db,'vistorias'),{...v,ts:Date.now()});
+    const idx=G.historico.indexOf(v);
+    if(idx>=0){G.historico[idx]._fsId=ref.id;saveHistorico()}
+  }catch(e){}
+}
+async function deleteFS(fsId){
+  if(!G.db||!window._fs||!fsId)return;
+  try{const{doc,deleteDoc}=window._fs;await deleteDoc(doc(G.db,'vistorias',fsId))}catch(e){}
+}
+
+// ═══════════════════════════════════════════════
+// HELPERS UI
+// ═══════════════════════════════════════════════
+function h(s){return String(s??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function fld(lbl,inp,ref){
+  return `<div class="fld"><label class="lbl">${lbl}</label>${inp}${ref?`<div style="font-size:10px;color:#9CA3AF;margin-top:3px;">${ref}</div>`:''}</div>`
+}
+function slt(opts,val,ev){
+  return `<select class="inp" onchange="${ev}">${opts.map(o=>{
+    const v=typeof o==='string'?o:o.val;const l=typeof o==='string'?o:o.label;
+    return `<option value="${h(v)}"${val===v?' selected':''}>${h(l)}</option>`;
+  }).join('')}</select>`
+}
+function pbHTML(v,color){
+  return `<div class="pb"><div class="pb-fill" style="width:${Math.min(100,v||0)}%;background:${color}"></div></div>`
+}
+function ringHTML(pct,color,size=96,stroke=8){
+  const r=(size-stroke*2)/2,ci=2*Math.PI*r,off=ci-(pct/100)*ci;
+  return `<svg width="${size}" height="${size}" style="transform:rotate(-90deg)">
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#E5E7EB" stroke-width="${stroke}"/>
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}"
+      stroke-dasharray="${ci.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" stroke-linecap="round"/>
+  </svg>`
+}
+function logoQM(maxW=180,white=false,center=false){
+  return `<div style="display:inline-block;max-width:${maxW}px;text-align:${center?'center':'left'};
+    background:${white?'rgba(255,255,255,.92)':'transparent'};
+    border-radius:${white?8:0}px;padding:${white?'4px 10px':'0'}">
+    <img src="${LOGO_QM_B64}" alt="Queiroz Marra"
+      style="max-width:100%;height:auto;display:block;border-radius:4px"/>
+  </div>`
+}
+function corIndice(v){return v>=85?'#10B981':v>=60?'#F59E0B':'#EF4444'}
+function lblIndice(v){return v>=85?'CONFORME':v>=60?'ATENÇÃO':'NÃO CONFORME'}
+function calcIndice(modId,resps){
+  const todos=Object.values(CHECKLIST[modId]||{}).flat();
+  const aval=todos.filter(i=>resps[i.id]==='C'||resps[i.id]==='NC');
+  const conf=aval.filter(i=>resps[i.id]==='C');
+  return aval.length>0?Math.round(conf.length/aval.length*100):0;
+}
+
+// ═══════════════════════════════════════════════
+// NAVEGAÇÃO
+// ═══════════════════════════════════════════════
+function goTab(tab){
+  G.tab=tab;G.tela='home';G.histViewIdx=null;
+  document.getElementById('tb-home').querySelector('.tab-lbl').style.color=tab==='home'?'#1B4332':'#9CA3AF';
+  document.getElementById('tb-hist').querySelector('.tab-lbl').style.color=tab==='hist'?'#1B4332':'#9CA3AF';
+  render();
+}
+function goHome(){
+  G.tela='home';G.tab='home';G.modSel=null;
+  G.fabOpen=false;
+  document.getElementById('fab-wrap').style.display='none';
+  document.getElementById('fab-overlay').style.display='none';
+  document.getElementById('fab-menu').style.display='none';
+  document.getElementById('fab-btn').textContent='☰';
+  document.getElementById('tb-home').querySelector('.tab-lbl').style.color='#1B4332';
+  document.getElementById('tb-hist').querySelector('.tab-lbl').style.color='#9CA3AF';
+  render();
+}
+function toggleFab(){
+  G.fabOpen=!G.fabOpen;
+  const menu=document.getElementById('fab-menu');
+  const ov=document.getElementById('fab-overlay');
+  const btn=document.getElementById('fab-btn');
+  if(G.fabOpen){menu.style.display='flex';ov.style.display='block';btn.textContent='✕'}
+  else{menu.style.display='none';ov.style.display='none';btn.textContent='☰'}
+}
+function closeFab(){
+  G.fabOpen=false;
+  document.getElementById('fab-menu').style.display='none';
+  document.getElementById('fab-overlay').style.display='none';
+  document.getElementById('fab-btn').textContent='☰';
+}
+function startVistoria(modId){
+  G.modSel=modId;G.etapa=0;
+  G.respostas={};G.notas={};G.quant={};G.conclusao={};
+  G.meta={tecnicos:[{nome:'',crea:'',cargo:'',especialidade:''}],acompanhantes:[{nome:'',cargo:'',orgao:''}]};
+  G.secoes=Object.keys(CHECKLIST[modId]||{});
+  G.tela='vistoria';G.fabOpen=false;
+  const fw=document.getElementById('fab-wrap');
+  if(fw){fw.style.display='flex';document.getElementById('fab-btn').style.background=MODULOS[modId].cor}
+  document.getElementById('fab-menu').style.display='none';
+  render();
+}
+
+// Fluxo etapas: ['id', ...secoes, 'quant', 'conclusao']
+function getEtapas(){return['id',...G.secoes,'quant','conclusao']}
+function nextEtapa(){G.etapa++;window.scrollTo(0,0);render()}
+function prevEtapa(){if(G.etapa===0){goHome();return}G.etapa--;window.scrollTo(0,0);render()}
+
+function finalizarVistoria(){
+  const indice=calcIndice(G.modSel,G.respostas);
+  const v={modId:G.modSel,meta:{...G.meta},respostas:{...G.respostas},
+    notas:{...G.notas},conclusao:{...G.conclusao},quant:{...G.quant},indice,ts:Date.now()};
+  G.historico.push(v);saveHistorico();saveFS(v);
+  goHome();
+}
+function excluirVistoria(idx){
+  if(!confirm('Excluir esta vistoria?'))return;
+  const v=G.historico[idx];
+  if(v?._fsId)deleteFS(v._fsId);
+  G.historico.splice(idx,1);saveHistorico();render();
+}
+function exportBackup(){
+  const data=JSON.stringify({cidades:G.cidades,historico:G.historico,exportedAt:new Date().toISOString()},null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`qm-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();
+  URL.revokeObjectURL(url);
+}
+function importBackup(input){
+  const file=input.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{try{const d=JSON.parse(ev.target.result);
+    if(d.historico)G.historico=d.historico;if(d.cidades)G.cidades=d.cidades;
+    saveHistorico();saveCidades();alert('Backup importado!');render()
+  }catch{alert('Arquivo inválido')}};
+  r.readAsText(file);input.value='';
+}
+
+// ═══════════════════════════════════════════════
+// RENDER PRINCIPAL
+// ═══════════════════════════════════════════════
+function render(){
+  const root=document.getElementById('root');
+  const tabbar=document.getElementById('tabbar');
+
+  // Overlay relatório histórico
+  if(G.histViewIdx!==null&&G.historico[G.histViewIdx]){
+    tabbar.style.display='none';
+    root.innerHTML=buildRelatorio(G.historico[G.histViewIdx],true);
+    window.scrollTo(0,0);return;
+  }
+  if(G.histViewIdx!==null)G.histViewIdx=null;
+
+  if(G.tela==='vistoria'){
+    tabbar.style.display='none';root.innerHTML=buildVistoria();window.scrollTo(0,0);return;
+  }
+  if(G.tela==='relatorio'){
+    tabbar.style.display='none';
+    const v={modId:G.modSel,meta:G.meta,respostas:G.respostas,notas:G.notas,
+      conclusao:G.conclusao,quant:G.quant,indice:calcIndice(G.modSel,G.respostas)};
+    root.innerHTML=buildRelatorio(v,false);window.scrollTo(0,0);return;
+  }
+  if(G.tela==='gerenciar'){
+    tabbar.style.display='none';
+    document.getElementById('fab-wrap').style.display='none';
+    root.innerHTML=buildGerenciar();window.scrollTo(0,0);return;
+  }
+  tabbar.style.display='flex';
+  root.innerHTML=G.tab==='home'?buildHome():buildHistorico();
+  window.scrollTo(0,0);
+}
+
+// ═══════════════════════════════════════════════
+// TELA HOME — idêntica ao original
+// ═══════════════════════════════════════════════
+function buildHome(){
+  const cidAtivas=G.cidades.filter(c=>c.nome);
+  const cidHTML=cidAtivas.length===0
+    ?`<button onclick="G.tela='gerenciar';render()" style="width:100%;background:#fff;border:2px dashed #D1D5DB;border-radius:14px;padding:16px;font-size:13px;color:#9CA3AF;cursor:pointer;margin-bottom:8px;">+ Cadastrar primeiro município</button>`
+    :`<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px">${cidAtivas.map(c=>{
+        const vstC=G.historico.filter(v=>v.meta?.cidadeId===c.id);
+        const ult=vstC.length?vstC[vstC.length-1]:null;
+        const ci=ult?(ult.indice>=85?'#10B981':ult.indice>=60?'#F59E0B':'#EF4444'):null;
+        return `<button onclick="G.cidFiltro='${c.id}';goTab('hist')" style="background:#fff;border:1.5px solid #D1FAE5;border-radius:12px;padding:10px 14px;min-width:140px;flex-shrink:0;cursor:pointer;text-align:left;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+          <div style="font-size:13px;font-weight:800;color:#111827">${c.nome}</div>
+          <div style="font-size:10px;color:#6B7280;margin-top:1px">${c.uf} · ${(c.pop_total||0).toLocaleString('pt-BR')} hab.</div>
+          ${ult?`<div style="font-size:10px;font-weight:700;color:${ci};margin-top:4px">${vstC.length} vistoria(s) · última: ${ult.indice}%</div>`
+               :`<div style="font-size:10px;color:#9CA3AF;margin-top:4px">Sem vistorias ainda</div>`}
+        </button>`;
+      }).join('')}</div>`;
+
+  const modsHTML=Object.values(MODULOS).map(m=>{
+    const cl=CHECKLIST[m.id]||{};
+    const total=Object.values(cl).reduce((a,v)=>a+v.length,0);
+    return `<button onclick="startVistoria('${m.id}')" style="width:100%;background:#fff;border:1px solid #E5E7EB;border-radius:18px;padding:16px;margin-bottom:10px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div style="width:54px;height:54px;border-radius:16px;font-size:26px;display:flex;align-items:center;justify-content:center;background:${m.cor}18;flex-shrink:0;border:2px solid ${m.cor}22">${m.icon}</div>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:800;color:#111827">${m.label}</div>
+        <div style="font-size:10px;color:#6B7280;margin-top:2px;line-height:1.4">${m.lei}</div>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+          <span class="badge" style="background:${m.cor}15;color:${m.cor}">${total} itens</span>
+          <span class="badge" style="background:#F3F4F6;color:#6B7280">${m.frequencia}</span>
+        </div>
+      </div>
+      <div style="color:${m.cor};font-size:22px;font-weight:900">›</div>
+    </button>`;
+  }).join('');
+
+  return `<div class="screen">
+    <div class="hdr">
+      <div style="margin-bottom:16px">${logoQM(200,true)}</div>
+      <div style="font-size:22px;font-weight:900;line-height:1.1;margin-bottom:4px">Sistema de Vistoria Técnica</div>
+      <div style="font-size:12px;opacity:.7;margin-bottom:16px">Consultoria em Resíduos Sólidos Urbanos</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${['PNRS','CONAMA 307','NBR 15849','ANA 79/2021','Lixão Zero GO'].map(t=>`<span style="background:rgba(255,255,255,.12);color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px">${t}</span>`).join('')}
+      </div>
+    </div>
+    <div style="padding:20px 16px 0">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:800;color:#6B7280;letter-spacing:1.2px">MUNICÍPIOS</div>
+        <button onclick="G.tela='gerenciar';render()" style="background:#1B4332;color:#fff;border:none;border-radius:20px;padding:5px 14px;font-size:11px;font-weight:700;cursor:pointer">+ Gerenciar</button>
+      </div>
+      ${cidHTML}
+    </div>
+    <div style="padding:20px 16px 0">
+      <div style="font-size:11px;font-weight:800;color:#6B7280;letter-spacing:1.2px;margin-bottom:12px">INICIAR VISTORIA TÉCNICA</div>
+      ${modsHTML}
+    </div>
+    <div style="padding:20px 16px 0;text-align:center">
+      <div style="font-size:10px;color:#9CA3AF;line-height:1.6">Relatórios gerados atendem exigências do MP, TCE e SEMAD-GO</div>
+      <div style="margin-top:8px;font-size:10px;color:#10B981;font-weight:700">✓ Dados salvos localmente · Funciona sem internet</div>
+      <div style="margin-top:4px;font-size:9px;color:#9CA3AF">Busca IBGE e GPS requerem conexão apenas no cadastro de municípios</div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════
+// GERENCIAR CIDADES — idêntico ao original
+// ═══════════════════════════════════════════════
+function buildGerenciar(){
+  const rows=G.cidades.map((c,i)=>`
+  <div class="card">
+    <div style="font-size:11px;font-weight:800;color:#1B4332;margin-bottom:12px">
+      MUNICÍPIO ${i+1} ${!c.nome?'<span style="color:#D1D5DB">· não cadastrado</span>':''}
+    </div>
+    <div style="display:flex;gap:8px">
+      <div style="flex:3">${fld('Nome do município',`<input class="inp" id="cn${i}nome" value="${h(c.nome||'')}" placeholder="Ex: Buriti Alegre"/>`)}</div>
+      <div style="flex:1">${fld('UF',`<input class="inp" id="cn${i}uf" value="${h(c.uf||'GO')}" placeholder="GO"/>`)}</div>
+    </div>
+    <button id="ibge${i}" onclick="buscarIBGE(${i})" style="width:100%;margin-bottom:10px;background:#1B4332;color:#fff;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:800;cursor:pointer">
+      🔍 Buscar dados via IBGE + GPS
+    </button>
+    <div id="ibgem${i}" style="display:none;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:11px;line-height:1.5"></div>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1">${fld('Área (km²)',`<input class="inp" id="cn${i}area_km2" type="number" value="${c.area_km2||''}"/>`)}</div>
+      <div style="flex:1">${fld('Cód. IBGE',`<input class="inp" id="cn${i}cod_ibge" value="${h(c.cod_ibge||'')}"/>`)}</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1">${fld('Pop. total',`<input class="inp" id="cn${i}pop_total" type="number" value="${c.pop_total||''}"/>`)}</div>
+      <div style="flex:1">${fld('Pop. urbana',`<input class="inp" id="cn${i}pop_urbana" type="number" value="${c.pop_urbana||''}"/>`)}</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1">${fld('Latitude (sede)',`<input class="inp" id="cn${i}lat_cidade" value="${h(c.lat_cidade||'')}" placeholder="Auto"/>`)}</div>
+      <div style="flex:1">${fld('Longitude (sede)',`<input class="inp" id="cn${i}lng_cidade" value="${h(c.lng_cidade||'')}" placeholder="Auto"/>`)}</div>
+    </div>
+    <div style="margin-top:8px;padding-top:12px;border-top:1px solid #F3F4F6">
+      <div style="font-size:10px;font-weight:800;color:#6B7280;margin-bottom:8px;letter-spacing:1px">DADOS DA PREFEITURA / EMPREENDEDOR</div>
+      ${fld('CNPJ da Prefeitura',`<input class="inp" id="cn${i}cnpj_pref" value="${h(c.cnpj_pref||'')}" placeholder="00.000.000/0001-00"/>`)}
+      ${fld('Nome do empreendedor',`<input class="inp" id="cn${i}empreendedor_nome" value="${h(c.empreendedor_nome||'')}" placeholder="Prefeitura Municipal de..."/>`)}
+      ${fld('Telefone prefeitura',`<input class="inp" id="cn${i}tel_pref" value="${h(c.tel_pref||'')}" placeholder="(64) 3444-9900"/>`)}
+      ${fld('E-mail prefeitura',`<input class="inp" id="cn${i}email_pref" value="${h(c.email_pref||'')}" placeholder="contato@municipio.go.gov.br"/>`)}
+      ${fld('Secretaria de Meio Ambiente',`<input class="inp" id="cn${i}gerenciador" value="${h(c.gerenciador||'')}" placeholder="Sec. Mun. de Meio Ambiente"/>`)}
+      ${fld('CNPJ da Secretaria',`<input class="inp" id="cn${i}cnpj_sema" value="${h(c.cnpj_sema||'')}" placeholder="00.000.000/0001-00"/>`)}
+      ${fld('Tel. Secretaria',`<input class="inp" id="cn${i}tel_sema" value="${h(c.tel_sema||'')}"/>`)}
+      ${fld('E-mail Secretaria',`<input class="inp" id="cn${i}email_sema" value="${h(c.email_sema||'')}"/>`)}
+      ${fld('Secretário(a) de Meio Ambiente',`<input class="inp" id="cn${i}secretario" value="${h(c.secretario||'')}" placeholder="Nome do secretário"/>`)}
+    </div>
+  </div>`).join('');
+
+  return `<div class="screen">
+    <div class="hdr hdr-sm">
+      <button onclick="G.tela='home';render()" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;margin-bottom:12px">← Voltar</button>
+      ${logoQM(180,true)}
+      <div style="font-size:20px;font-weight:900;margin-top:10px">Cadastro de Municípios</div>
+      <div style="font-size:11px;opacity:.7;margin-top:3px">Dados buscados automaticamente via IBGE + OpenStreetMap</div>
+    </div>
+    <div style="padding:16px">
+      ${rows}
+      <button onclick="salvarCidades()" class="btn" style="background:#1B4332">💾 Salvar Municípios</button>
+    </div>
+  </div>`;
+}
+
+function salvarCidades(){
+  const nf=['pop_urbana','pop_total','area_km2'];
+  G.cidades.forEach((c,i)=>{
+    ['nome','uf','area_km2','cod_ibge','pop_total','pop_urbana','lat_cidade','lng_cidade',
+     'cnpj_pref','empreendedor_nome','tel_pref','email_pref','gerenciador','cnpj_sema',
+     'tel_sema','email_sema','secretario'].forEach(k=>{
+      const el=document.getElementById(`cn${i}${k}`);
+      if(el)G.cidades[i][k]=nf.includes(k)?(parseFloat(el.value)||0):el.value;
+    });
+  });
+  saveCidades();G.tela='home';render();
+}
+
+async function buscarIBGE(i){
+  const c=G.cidades[i];
+  const nome=(document.getElementById(`cn${i}nome`)?.value||c.nome||'').trim();
+  const uf=(document.getElementById(`cn${i}uf`)?.value||c.uf||'GO').trim().toUpperCase();
+  const msg=el=>document.getElementById(`ibgem${i}`);
+  const btn=document.getElementById(`ibge${i}`);
+  const msgEl=document.getElementById(`ibgem${i}`);
+  if(!nome){ibgeMsg(msgEl,'⚠️ Digite o nome do município primeiro.','warn');return}
+  btn.textContent='⏳ Buscando...';btn.disabled=true;
+  ibgeMsg(msgEl,'🔍 Buscando no IBGE...','info');
+  try{
+    const r1=await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/municipios?orderBy=nome');
+    const todos=await r1.json();
+    const nm=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    const match=todos.find(m=>nm(m.nome)===nm(nome)&&(!uf||m.microrregiao?.mesorregiao?.UF?.sigla===uf))
+      ||todos.find(m=>nm(m.nome)===nm(nome));
+    if(!match){ibgeMsg(msgEl,'❌ Município não encontrado no IBGE.','err');btn.textContent='🔍 Buscar via IBGE + GPS';btn.disabled=false;return}
+    const cod=match.id,ufS=match.microrregiao?.mesorregiao?.UF?.sigla||'';
+    ibgeMsg(msgEl,'📊 Buscando população e área...','info');
+    let popT=0,area=0,lat='',lng='';
+    try{const r2=await fetch(`https://servicodados.ibge.gov.br/api/v3/agregados/4709/periodos/2022/variaveis/93?localidades=N6[${cod}]`);
+      const d2=await r2.json();popT=parseInt(d2?.[0]?.resultados?.[0]?.series?.[0]?.serie?.['2022'])||0}catch{}
+    try{const r3=await fetch(`https://servicodados.ibge.gov.br/api/v3/agregados/1301/periodos/2022/variaveis/614?localidades=N6[${cod}]`);
+      const d3=await r3.json();area=parseFloat(d3?.[0]?.resultados?.[0]?.series?.[0]?.serie?.['2022'])||0}catch{}
+    ibgeMsg(msgEl,'🌍 Buscando coordenadas GPS...','info');
+    try{const r5=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(nome+', '+ufS+', Brazil')}&format=json&limit=1`,{headers:{'Accept-Language':'pt-BR'}});
+      const d5=await r5.json();if(d5?.[0]){lat=parseFloat(d5[0].lat).toFixed(6);lng=parseFloat(d5[0].lon).toFixed(6)}}catch{}
+    const upd=(k,v)=>{const el=document.getElementById(`cn${i}${k}`);if(el)el.value=v};
+    upd('uf',ufS);upd('cod_ibge',cod);upd('pop_total',popT);upd('pop_urbana',Math.round(popT*0.75));
+    upd('area_km2',area);upd('lat_cidade',lat);upd('lng_cidade',lng);
+    ibgeMsg(msgEl,`✅ Pop: ${popT.toLocaleString('pt-BR')} hab · ${area?area.toFixed(1)+' km²':''} · GPS: ${lat||'—'}, ${lng||'—'}`,'ok');
+  }catch(e){ibgeMsg(msgEl,'❌ Erro. Verifique a conexão.','err')}
+  btn.textContent='🔍 Buscar via IBGE + GPS';btn.disabled=false;
+}
+function ibgeMsg(el,msg,t){
+  if(!el)return;
+  const c={info:['#EFF6FF','#BFDBFE'],ok:['#F0FDF4','#BBF7D0'],warn:['#FFFBEB','#FDE68A'],err:['#FEF2F2','#FECACA']}[t]||['#EFF6FF','#BFDBFE'];
+  el.style.display='block';el.style.background=c[0];el.style.border=`1px solid ${c[1]}`;el.textContent=msg;
+}
+
+// ═══════════════════════════════════════════════
+// FLUXO VISTORIA — idêntico ao original
+// ═══════════════════════════════════════════════
+function buildVistoria(){
+  const etapas=getEtapas();
+  const cur=etapas[G.etapa];
+  const mod=MODULOS[G.modSel];
+  if(cur==='id')return buildIdentificacao(mod);
+  if(cur==='quant')return buildQuantitativos(mod);
+  if(cur==='conclusao')return buildConclusao(mod);
+  return buildChecklistSecao(mod,cur,G.secoes.indexOf(cur));
+}
+
+// ── IDENTIFICAÇÃO ──────────────────────────────
+function buildIdentificacao(mod){
+  const m=G.meta;
+  const hoje=new Date().toISOString().slice(0,10);
+  const agora=new Date().toTimeString().slice(0,5);
+  if(!m.data)m.data=hoje;
+  if(!m.hora_inicio)m.hora_inicio=agora;
+  if(!m.numero_visita)m.numero_visita='1';
+  if(!m.clima)m.clima='Ensolarado';
+  const cids=G.cidades.filter(c=>c.nome);
+  if(!m.cidadeId&&cids[0])m.cidadeId=cids[0].id;
+  const cidSel=G.cidades.find(c=>c.id===m.cidadeId);
+  if(cidSel&&!m._preenchido){
+    m.empreendedor_nome=m.empreendedor_nome||cidSel.empreendedor_nome||(cidSel.nome?`Prefeitura Municipal de ${cidSel.nome}`:'');
+    m.empreendedor_cnpj=m.empreendedor_cnpj||cidSel.cnpj_pref||'';
+    m.empreendedor_tel=m.empreendedor_tel||cidSel.tel_pref||'';
+    m.empreendedor_email=m.empreendedor_email||cidSel.email_pref||'';
+    m.gerenciador=m.gerenciador||cidSel.gerenciador||'';
+    m.gerenciador_cnpj=m.gerenciador_cnpj||cidSel.cnpj_sema||'';
+    m.gerenciador_tel=m.gerenciador_tel||cidSel.tel_sema||'';
+    m.gerenciador_email=m.gerenciador_email||cidSel.email_sema||'';
+    m.secretario=m.secretario||cidSel.secretario||'';
+    m.lat=m.lat||cidSel.lat_cidade||'';
+    m.lng=m.lng||cidSel.lng_cidade||'';
+    m._preenchido=true;
+  }
+  if(!m.numero_relatorio&&!m._rtManual)m.numero_relatorio=autoRT();
+
+  const cidOpts=cids.map(c=>({val:c.id,label:`${c.nome} – ${c.uf}`}));
+  const areaLbl={aterro:'Nome / localização do Aterro Provisório (valas)',sanitario:'Nome / identificação do Aterro Sanitário',
+    prad:'Identificação da área do PRAD (ex: Área I – Lixão Municipal)',rcc:'Identificação da área de RCC / Ecoponto',
+    coleta:'Município / Rota / Cooperativa avaliada'}[mod.id];
+
+  return `<div class="screen">
+  <div class="hdr hdr-sm">
+    <button onclick="prevEtapa()" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;margin-bottom:14px">← Início</button>
+    ${logoQM(200,true)}
+    <div style="margin-top:12px;font-size:22px;font-weight:900">${mod.icon} ${mod.label}</div>
+    <div style="font-size:11px;opacity:.8;margin-top:4px">Identificação da Vistoria</div>
+    <div style="margin-top:8px;font-size:10px;opacity:.7;line-height:1.5">${mod.lei}</div>
+    <div style="margin-top:8px"><span style="background:${mod.cor};color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:99px">${mod.label}</span></div>
+  </div>
+  <div style="padding:16px">
+  <div class="card">
+    <div style="font-size:11px;font-weight:800;color:#6B7280;margin-bottom:14px;letter-spacing:1px">DADOS DO CONTRATO</div>
+    ${fld('Número do contrato / processo',`<input class="inp" value="${h(m.contrato||'')}" oninput="G.meta.contrato=this.value" placeholder="Contrato nº 001/2025..."/>`)}
+    ${fld('Nº do relatório',`<input class="inp" id="inp-rt" value="${h(m.numero_relatorio||autoRT())}" oninput="G.meta.numero_relatorio=this.value;G.meta._rtManual=true"/>`)}
+    ${fld('Monitoramento (objeto)',`<input class="inp" value="${h(m.objeto||'')}" oninput="G.meta.objeto=this.value" placeholder="PCMS e PRAD / Aterro Sanitário..."/>`)}
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:800;color:#6B7280;letter-spacing:1px">EMPREENDEDOR (PREFEITURA)</div>
+      <span style="font-size:10px;color:#1B4332;font-weight:700">✓ Auto preenchido do cadastro</span>
+    </div>
+    ${fld('Nome do empreendedor',`<input class="inp" value="${h(m.empreendedor_nome||'')}" oninput="G.meta.empreendedor_nome=this.value" placeholder="Prefeitura Municipal de..."/>`)}
+    <div style="display:flex;gap:8px">
+      <div style="flex:1">${fld('CNPJ',`<input class="inp" value="${h(m.empreendedor_cnpj||'')}" oninput="G.meta.empreendedor_cnpj=this.value" placeholder="00.000.000/0001-00"/>`)}</div>
+      <div style="flex:1">${fld('Telefone',`<input class="inp" value="${h(m.empreendedor_tel||'')}" oninput="G.meta.empreendedor_tel=this.value" placeholder="(64) 3444-9900"/>`)}</div>
+    </div>
+    ${fld('E-mail prefeitura',`<input class="inp" value="${h(m.empreendedor_email||'')}" oninput="G.meta.empreendedor_email=this.value" placeholder="contato@municipio.go.gov.br"/>`)}
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid #F3F4F6">
+      <div style="font-size:10px;font-weight:800;color:#6B7280;margin-bottom:8px;letter-spacing:1px">GERENCIADOR DO PROGRAMA</div>
+      ${fld('Secretaria de Meio Ambiente',`<input class="inp" value="${h(m.gerenciador||'')}" oninput="G.meta.gerenciador=this.value" placeholder="Sec. Mun. de Meio Ambiente"/>`)}
+      <div style="display:flex;gap:8px">
+        <div style="flex:1">${fld('CNPJ Secretaria',`<input class="inp" value="${h(m.gerenciador_cnpj||'')}" oninput="G.meta.gerenciador_cnpj=this.value" placeholder="00.000.000/0001-00"/>`)}</div>
+        <div style="flex:1">${fld('Telefone',`<input class="inp" value="${h(m.gerenciador_tel||'')}" oninput="G.meta.gerenciador_tel=this.value" placeholder="(64) 98124-6053"/>`)}</div>
+      </div>
+      ${fld('E-mail Secretaria',`<input class="inp" value="${h(m.gerenciador_email||'')}" oninput="G.meta.gerenciador_email=this.value" placeholder="meioambiente@municipio.go.gov.br"/>`)}
+      ${fld('Secretário(a) responsável',`<input class="inp" value="${h(m.secretario||'')}" oninput="G.meta.secretario=this.value" placeholder="Nome do secretário"/>`)}
+    </div>
+  </div>
+  <div class="card">
+    <div style="font-size:11px;font-weight:800;color:#6B7280;margin-bottom:14px;letter-spacing:1px">LOCALIZAÇÃO E OBJETO</div>
+    ${cids.length>0
+      ?fld('Município (selecione para preencher dados)',slt(cidOpts,m.cidadeId,`G.meta.cidadeId=this.value;G.meta._preenchido=false;updRT();render()`))
+      :fld('Município',`<input class="inp" value="${h(m.municipio_manual||'')}" oninput="G.meta.municipio_manual=this.value" placeholder="Nome do município"/>`)
+    }
+    ${cidSel&&cidSel.pop_total?`<div style="background:#F0FDF4;border-radius:10px;padding:12px 14px;margin-bottom:14px;border:1px solid #BBF7D0">
+      <div style="font-size:11px;font-weight:800;color:#166534;margin-bottom:6px">📊 DADOS DO MUNICÍPIO (IBGE)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+        ${[['Pop. Total',(cidSel.pop_total||0).toLocaleString('pt-BR')+' hab.'],['Pop. Urbana',(cidSel.pop_urbana||0).toLocaleString('pt-BR')+' hab.'],
+           ['Área',(cidSel.area_km2||0)+' km²'],['Cód. IBGE',cidSel.cod_ibge||'—'],
+           ['Lat (sede)',cidSel.lat_cidade||'—'],['Lng (sede)',cidSel.lng_cidade||'—']]
+          .map(([k,v])=>`<div><span style="font-size:10px;color:#6B7280">${k}: </span><span style="font-size:10px;font-weight:700;color:#166534">${v}</span></div>`).join('')}
+      </div>
+      ${cidSel.pop_urbana>0?`<div style="font-size:10px;color:#166534;margin-top:6px;padding-top:6px;border-top:1px solid #BBF7D0">📌 Meta PNRS 2025: ≥ 15% cobertura ≈ ${Math.round(cidSel.pop_urbana*0.15).toLocaleString('pt-BR')} hab.</div>`:''}
+    </div>`:''}
+    ${fld(areaLbl,`<input class="inp" value="${h(m.area||'')}" oninput="G.meta.area=this.value" placeholder="Identificação detalhada..."/>`)}
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <div style="flex:1">${fld('Latitude GPS (local)',`<input class="inp" value="${h(m.lat||cidSel?.lat_cidade||'')}" oninput="G.meta.lat=this.value" placeholder="${cidSel?.lat_cidade||'-17.32...'}"/>`)}</div>
+      <div style="flex:1">${fld('Longitude GPS (local)',`<input class="inp" value="${h(m.lng||cidSel?.lng_cidade||'')}" oninput="G.meta.lng=this.value" placeholder="${cidSel?.lng_cidade||'-49.05...'}"/>`)}</div>
+    </div>
+    <div style="font-size:10px;color:#6B7280;margin-top:4px">💡 Coordenadas preenchidas automaticamente da sede municipal. Edite para o local exato da vistoria.</div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:800;color:#6B7280;letter-spacing:1px">RESPONSÁVEIS TÉCNICOS</div>
+      <button onclick="addTecnico()" style="background:${mod.cor};color:#fff;border:none;border-radius:20px;padding:5px 14px;font-size:11px;font-weight:700;cursor:pointer">+ Adicionar</button>
+    </div>
+    <div id="tec-wrap">${renderTecnicos(mod)}</div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:800;color:#6B7280;letter-spacing:1px">ACOMPANHANTES DA PREFEITURA</div>
+      <button onclick="addAcomp()" style="background:#6B7280;color:#fff;border:none;border-radius:20px;padding:5px 14px;font-size:11px;font-weight:700;cursor:pointer">+ Adicionar</button>
+    </div>
+    <div id="acomp-wrap">${renderAcomp()}</div>
+  </div>
+  <div class="card">
+    <div style="font-size:11px;font-weight:800;color:#6B7280;margin-bottom:14px;letter-spacing:1px">DATA, HORA E CONDIÇÕES CLIMÁTICAS</div>
+    ${fld('Data da vistoria',`<input class="inp" type="date" value="${h(m.data||hoje)}" oninput="G.meta.data=this.value;updRT()"/>`)}
+    <div style="display:flex;gap:8px">
+      <div style="flex:1">${fld('Hora início',`<input class="inp" type="time" value="${h(m.hora_inicio||agora)}" oninput="G.meta.hora_inicio=this.value"/>`)}</div>
+      <div style="flex:1">${fld('Hora término',`<input class="inp" type="time" value="${h(m.hora_fim||'')}" oninput="G.meta.hora_fim=this.value"/>`)}</div>
+    </div>
+    ${fld('Condição climática',slt(['Ensolarado','Nublado','Chuvoso','Após chuva recente (< 12h)','Chuva leve','Frio / Geada'],m.clima||'Ensolarado','G.meta.clima=this.value'))}
+    <div style="display:flex;gap:8px">
+      <div style="flex:1">${fld('Temperatura (°C)',`<input class="inp" type="number" value="${h(m.temp||'')}" oninput="G.meta.temp=this.value" placeholder="28"/>`)}</div>
+      <div style="flex:1">${fld('Umidade relativa (%)',`<input class="inp" type="number" value="${h(m.umidade||'')}" oninput="G.meta.umidade=this.value" placeholder="65"/>`)}</div>
+    </div>
+  </div>
+  <div class="card">
+    ${fld('Observações e contexto iniciais da visita',`<textarea class="inp" rows="4" oninput="G.meta.obs_iniciais=this.value" placeholder="Descreva: objetivo da visita, contexto, informações preliminares relevantes, demandas específicas do município...">${h(m.obs_iniciais||'')}</textarea>`)}
+  </div>
+  <button onclick="nextEtapa()" class="btn" style="background:${mod.cor}">Iniciar Vistoria →</button>
+  </div></div>`;
+}
+
+function autoRT(){
+  const m=G.meta;if(m._rtManual)return m.numero_relatorio||'';
+  const c=G.cidades.find(x=>x.id===m.cidadeId);
+  if(!c||!m.data)return '';
+  const mun=(c.nome||'').substring(0,6).toUpperCase().replace(/\s/g,'');
+  const ano=(m.data||'').substring(0,4)||new Date().getFullYear();
+  return `RT-${c.uf||'GO'}-${mun}-${ano}-${String(m.numero_visita||1).padStart(3,'0')}`;
+}
+function updRT(){
+  const rt=autoRT();
+  if(rt&&!G.meta._rtManual){G.meta.numero_relatorio=rt;const el=document.getElementById('inp-rt');if(el)el.value=rt}
+}
+
+function renderTecnicos(mod){
+  if(!G.meta.tecnicos)G.meta.tecnicos=[{nome:'',crea:'',cargo:'',especialidade:''}];
+  const m=mod||MODULOS[G.modSel];
+  return G.meta.tecnicos.map((t,i)=>`
+  <div style="background:#F9FAFB;border-radius:12px;padding:12px 14px;margin-bottom:10px;border:1px solid #E5E7EB">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:11px;font-weight:800;color:${m.cor}">RT ${i+1}${i===0?' · Responsável Principal':' · Apoio'}</div>
+      ${G.meta.tecnicos.length>1?`<button onclick="removeTecnico(${i})" style="background:#FEE2E2;color:#DC2626;border:none;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer">✕ Remover</button>`:''}
+    </div>
+    ${fld('Nome completo',`<input class="inp" value="${h(t.nome)}" oninput="G.meta.tecnicos[${i}].nome=this.value" placeholder="Engenheiro / Biólogo / Geólogo"/>`)}
+    <div style="display:flex;gap:8px">
+      <div style="flex:1">${fld('Registro (CREA/CFBio/CRQ)',`<input class="inp" value="${h(t.crea)}" oninput="G.meta.tecnicos[${i}].crea=this.value" placeholder="CREA-GO 12345"/>`)}</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1">${fld('Cargo / Função',`<input class="inp" value="${h(t.cargo)}" oninput="G.meta.tecnicos[${i}].cargo=this.value" placeholder="Eng. Ambiental Sênior"/>`)}</div>
+      <div style="flex:1">${fld('Especialidade',`<input class="inp" value="${h(t.especialidade)}" oninput="G.meta.tecnicos[${i}].especialidade=this.value" placeholder="Resíduos / PRAD..."/>`)}</div>
+    </div>
+  </div>`).join('');
+}
+function addTecnico(){
+  G.meta.tecnicos.push({nome:'',crea:'',cargo:'',especialidade:''});
+  const el=document.getElementById('tec-wrap');if(el)el.innerHTML=renderTecnicos();
+}
+function removeTecnico(i){
+  G.meta.tecnicos.splice(i,1);
+  const el=document.getElementById('tec-wrap');if(el)el.innerHTML=renderTecnicos();
+}
+
+function renderAcomp(){
+  if(!G.meta.acompanhantes)G.meta.acompanhantes=[{nome:'',cargo:'',orgao:''}];
+  return G.meta.acompanhantes.map((a,i)=>`
+  <div style="background:#F9FAFB;border-radius:12px;padding:12px 14px;margin-bottom:10px;border:1px solid #E5E7EB">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:11px;font-weight:700;color:#6B7280">Acompanhante ${i+1}</div>
+      ${G.meta.acompanhantes.length>1?`<button onclick="removeAcomp(${i})" style="background:#FEE2E2;color:#DC2626;border:none;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer">✕</button>`:''}
+    </div>
+    ${fld('Nome',`<input class="inp" value="${h(a.nome)}" oninput="G.meta.acompanhantes[${i}].nome=this.value" placeholder="Nome do representante"/>`)}
+    <div style="display:flex;gap:8px">
+      <div style="flex:1">${fld('Cargo',`<input class="inp" value="${h(a.cargo)}" oninput="G.meta.acompanhantes[${i}].cargo=this.value" placeholder="Secretário de Meio Ambiente"/>`)}</div>
+      <div style="flex:1">${fld('Órgão',`<input class="inp" value="${h(a.orgao)}" oninput="G.meta.acompanhantes[${i}].orgao=this.value" placeholder="Prefeitura / SEMAM"/>`)}</div>
+    </div>
+  </div>`).join('');
+}
+function addAcomp(){G.meta.acompanhantes.push({nome:'',cargo:'',orgao:''});const el=document.getElementById('acomp-wrap');if(el)el.innerHTML=renderAcomp()}
+function removeAcomp(i){G.meta.acompanhantes.splice(i,1);const el=document.getElementById('acomp-wrap');if(el)el.innerHTML=renderAcomp()}
+
+// ── CHECKLIST SEÇÃO — idêntico ao original ──────
+function buildChecklistSecao(mod,secao,secaoIdx){
+  const itens=CHECKLIST[mod.id]?.[secao]||[];
+  const resp=itens.filter(i=>G.respostas[i.id]).length;
+  const conf=itens.filter(i=>G.respostas[i.id]==='C').length;
+  const nc=itens.filter(i=>G.respostas[i.id]==='NC').length;
+  const pct=itens.length?Math.round(resp/itens.length*100):0;
+
+  const itemsHTML=itens.map(item=>{
+    const r=G.respostas[item.id];
+    const nota=G.notas[item.id]||'';
+    const cls='ci'+(r==='C'?' ci-c':r==='NC'?' ci-nc':r==='NA'?' ci-na':'');
+    return `<div class="${cls}" id="ci-${item.id}">
+      <div class="ci-text">${item.item}</div>
+      <div class="ci-btns">
+        ${[['C','✓ Conforme','#10B981'],['NC','✗ N.Conforme','#EF4444'],['NA','N/A','#9CA3AF']].map(([v,l,c])=>`
+        <button class="ci-btn" data-v="${v}" onclick="setResp('${item.id}','${v}')"
+          style="background:${r===v?c:'#F3F4F6'};color:${r===v?'#fff':'#6B7280'}">${l}</button>`).join('')}
+      </div>
+      ${(r==='NC'||r==='C'||r==='NA')?`<textarea class="ci-nota" rows="${r==='NC'?3:2}"
+        placeholder="${r==='NC'?'📝 Descreva: o que foi observado, causa provável, risco associado e ação corretiva recomendada...':'📝 Observação opcional...'}"
+        onchange="G.notas['${item.id}']=this.value">${h(nota)}</textarea>`:''}
+    </div>`;
+  }).join('');
+
+  return `<div class="screen">
+  <div class="hdr hdr-sm" style="position:sticky;top:0;z-index:10">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <button onclick="prevEtapa()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer">← Voltar</button>
+      <div style="font-size:12px;font-weight:700;opacity:.9">${mod.icon} ${mod.label}</div>
+    </div>
+    <div style="font-size:16px;font-weight:900;margin-bottom:2px">${secao}</div>
+    <div style="font-size:10px;opacity:.75;margin-bottom:8px">Seção ${secaoIdx+1} de ${G.secoes.length} · ${G.meta?.area||''} · ${G.meta?.data||''}</div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;opacity:.9;margin-bottom:4px">
+      <span id="hdr-stats">${resp}/${itens.length} avaliados</span>
+      <span>✓ ${conf} conformes · ✗ ${nc} N.C.</span>
+    </div>
+    <div class="pb"><div class="pb-fill" id="hdr-pb" style="width:${pct}%;background:rgba(255,255,255,.85)"></div></div>
+  </div>
+  <div style="padding:12px 16px 0">${itemsHTML}</div>
+  <div style="padding:12px 16px 0">
+    <button onclick="nextEtapa()" class="btn" style="background:${mod.cor}">Próxima Seção →</button>
+  </div>
+  </div>`;
+}
+
+function setResp(id,v){
+  if(G.respostas[id]===v)delete G.respostas[id];else G.respostas[id]=v;
+  const el=document.getElementById(`ci-${id}`);
+  if(!el)return;
+  el.className='ci'+(v==='C'&&G.respostas[id]?' ci-c':v==='NC'&&G.respostas[id]?' ci-nc':v==='NA'&&G.respostas[id]?' ci-na':'');
+  el.querySelectorAll('.ci-btn').forEach(b=>{
+    const bv=b.dataset.v;
+    const c=bv==='C'?'#10B981':bv==='NC'?'#EF4444':'#9CA3AF';
+    b.style.background=G.respostas[id]===bv?c:'#F3F4F6';
+    b.style.color=G.respostas[id]===bv?'#fff':'#6B7280';
+  });
+  // Mostrar/ocultar textarea
+  const ta=el.querySelector('.ci-nota');
+  const r=G.respostas[id];
+  if(r&&!ta){
+    const nota=G.notas[id]||'';
+    const div=document.createElement('textarea');
+    div.className='ci-nota';div.rows=r==='NC'?3:2;
+    div.placeholder=r==='NC'?'📝 Descreva: o que foi observado, causa provável, risco associado e ação corretiva recomendada...':'📝 Observação opcional...';
+    div.value=nota;div.onchange=()=>{G.notas[id]=div.value};
+    el.appendChild(div);
+  }else if(!r&&ta){ta.remove()}
+  // Atualiza header
+  const secao=G.secoes[G.etapa-1];
+  const itens=CHECKLIST[G.modSel]?.[secao]||[];
+  const rsp=itens.filter(i=>G.respostas[i.id]).length;
+  const cf=itens.filter(i=>G.respostas[i.id]==='C').length;
+  const nc=itens.filter(i=>G.respostas[i.id]==='NC').length;
+  const pct=itens.length?Math.round(rsp/itens.length*100):0;
+  const pb=document.getElementById('hdr-pb');if(pb)pb.style.width=pct+'%';
+  const st=document.getElementById('hdr-stats');if(st)st.textContent=`${rsp}/${itens.length} avaliados`;
+}
+
+// ── QUANTITATIVOS — idêntico ao original ────────
+function buildQuantitativos(mod){
+  const campos=CAMPOS_QUANTITATIVOS[mod.id]||[];
+  const cid=G.cidades.find(c=>c.id===G.meta?.cidadeId);
+  const popUrb=cid?.pop_urbana||0;
+  const kgMes=parseFloat(G.quant?.q_kg_mes||0);
+  const popAtend=parseInt(G.quant?.q_pop_atendida||0);
+  const gMes=popUrb*0.8*30;
+  const txR=gMes>0?((kgMes/gMes)*100).toFixed(2):0;
+  const cobP=popUrb>0?((popAtend/popUrb)*100).toFixed(1):0;
+
+  return `<div class="screen">
+  <div class="hdr hdr-sm">
+    <button onclick="prevEtapa()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;margin-bottom:12px">← Voltar</button>
+    <div style="font-size:20px;font-weight:900">📊 Dados Quantitativos</div>
+    <div style="font-size:11px;opacity:.8;margin-top:4px">Medições e parâmetros de campo</div>
+  </div>
+  <div style="padding:16px">
+    <div class="card">
+      <div style="font-size:11px;font-weight:800;color:#6B7280;margin-bottom:14px">MEDIÇÕES DE CAMPO</div>
+      ${campos.map(c=>`<div class="fld">
+        <label class="lbl">${c.label}</label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input class="inp" type="number" value="${h(G.quant?.[c.id]||'')}" placeholder="0" oninput="G.quant['${c.id}']=this.value" style="flex:1"/>
+          <span style="font-size:11px;color:#9CA3AF;white-space:nowrap">${c.unit}</span>
+        </div>
+        ${c.ref?`<div style="font-size:10px;color:#9CA3AF;margin-top:3px">📋 Ref.: ${c.ref}</div>`:''}
+      </div>`).join('')}
+    </div>
+    ${mod.id==='coleta'&&popUrb>0?`<div class="card">
+      <div style="font-size:11px;font-weight:800;color:#6B7280;margin-bottom:14px">INDICADORES CALCULADOS AUTOMATICAMENTE</div>
+      ${[{l:'Taxa de Recuperação de Recicláveis',v:`${txR}%`,m:'Meta PNRS/GO: ≥ 3%',c:parseFloat(txR)>=3?'#10B981':parseFloat(txR)>=1.5?'#F59E0B':'#EF4444',p:Math.min(100,parseFloat(txR)/3*100)},
+         {l:'Cobertura da população urbana',v:`${cobP}%`,m:'Meta Decreto GO 10.367/2021: ≥ 15%',c:parseFloat(cobP)>=15?'#10B981':parseFloat(cobP)>=8?'#F59E0B':'#EF4444',p:Math.min(100,parseFloat(cobP)/15*100)}]
+        .map(i=>`<div style="margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <div style="font-size:12px;font-weight:700;color:#374151">${i.l}</div>
+            <div style="font-size:16px;font-weight:900;color:${i.c}">${i.v}</div>
+          </div>
+          ${pbHTML(i.p,i.c)}
+          <div style="font-size:10px;color:#9CA3AF;margin-top:3px">${i.m}</div>
+        </div>`).join('')}
+    </div>`:''}
+    ${fld('Observações sobre os dados coletados',`<textarea class="inp" rows="3" oninput="G.quant.obs_quant=this.value" placeholder="Contexto dos valores medidos, limitações da medição, equipamentos utilizados...">${h(G.quant?.obs_quant||'')}</textarea>`)}
+    <button onclick="nextEtapa()" class="btn" style="background:${mod.cor}">Próxima Etapa →</button>
+  </div></div>`;
+}
+
+// ── CONCLUSÃO — idêntico ao original ────────────
+function buildConclusao(mod){
+  const c=G.conclusao;
+  return `<div class="screen">
+  <div class="hdr hdr-sm">
+    <button onclick="prevEtapa()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;margin-bottom:12px">← Voltar</button>
+    <div style="font-size:20px;font-weight:900">📋 Parecer Técnico Conclusivo</div>
+    <div style="font-size:11px;opacity:.8;margin-top:4px">Avaliação final e recomendações</div>
+  </div>
+  <div style="padding:16px">
+    <div class="card">
+      ${fld('Status geral de conformidade',slt(['Conforme – sem não conformidades','Conforme com ressalvas menores','Parcialmente conforme – ações necessárias','Não conforme – ação imediata exigida','Situação crítica – risco ambiental/saúde pública'],c.status||'Conforme com ressalvas menores','G.conclusao.status=this.value'))}
+    </div>
+    <div class="card">
+      ${fld('Síntese das principais não conformidades identificadas',`<textarea class="inp" rows="4" oninput="G.conclusao.ncs_resumo=this.value" placeholder="Liste as principais NCs e riscos identificados durante a vistoria...">${h(c.ncs_resumo||'')}</textarea>`)}
+      ${fld('Recomendações e ações corretivas prioritárias',`<textarea class="inp" rows="4" oninput="G.conclusao.recomendacoes=this.value" placeholder="Descreva as ações que devem ser executadas pelo município, prazos e responsáveis...">${h(c.recomendacoes||'')}</textarea>`)}
+      ${fld('Aspectos positivos observados',`<textarea class="inp" rows="3" oninput="G.conclusao.positivos=this.value" placeholder="Boas práticas, evoluções desde a última vistoria, ações eficazes identificadas...">${h(c.positivos||'')}</textarea>`)}
+    </div>
+    <div class="card">
+      ${fld('Embasamento legal aplicável às não conformidades',`<textarea class="inp" rows="3" oninput="G.conclusao.base_legal=this.value" placeholder="Ex: Descumprimento do Art. 14 da PNRS (Lei 12.305/2010); inobservância do Decreto GO 10.367/2021 Art. 5º...">${h(c.base_legal||'')}</textarea>`)}
+      ${fld('Riscos institucionais e jurídicos identificados',`<textarea class="inp" rows="3" oninput="G.conclusao.riscos=this.value" placeholder="Risco de autuação pela SEMAD, ação civil pública pelo MP, bloqueio de convênios federais...">${h(c.riscos||'')}</textarea>`)}
+      ${fld('Observações finais e encaminhamentos',`<textarea class="inp" rows="3" oninput="G.conclusao.obs_finais=this.value" placeholder="Informações adicionais, encaminhamentos e observações técnicas complementares...">${h(c.obs_finais||'')}</textarea>`)}
+    </div>
+    <button onclick="G.tela='relatorio';window.scrollTo(0,0);render()" class="btn" style="background:${mod.cor}">📄 Gerar Relatório Técnico →</button>
+  </div></div>`;
+}
+
+// ═══════════════════════════════════════════════
+// RELATÓRIO — idêntico ao original
+// ═══════════════════════════════════════════════
+function buildRelatorio(v,somenteLeitura){
+  const mod=MODULOS[v.modId]||{label:'',lei:'',icon:'',cor:'#1B4332'};
+  const cid=G.cidades.find(c=>c.id===v.meta?.cidadeId);
+  const municipio=cid?`${cid.nome} – ${cid.uf}`:v.meta?.municipio_manual||v.meta?.area||'Município';
+  const cl=CHECKLIST[v.modId]||{};
+  const todos=Object.values(cl).flat();
+  const aval=todos.filter(i=>v.respostas?.[i.id]==='C'||v.respostas?.[i.id]==='NC');
+  const conf=aval.filter(i=>v.respostas?.[i.id]==='C');
+  const ncsAll=todos.filter(i=>v.respostas?.[i.id]==='NC');
+  const nasAll=todos.filter(i=>v.respostas?.[i.id]==='NA');
+  // CORRIGIDO: sempre recalcula das respostas reais, ignora valor salvo
+  const indice=aval.length?Math.round(conf.length/aval.length*100):0;
+  const ci=corIndice(indice),li=lblIndice(indice);
+  const tecnsList=(v.meta?.tecnicos||[]).filter(t=>t.nome);
+  const [mostrarCL,setMostrarCL]=[false,null]; // substituído por inline toggle
+
+  const ncsSecHTML=Object.keys(cl).map(sec=>{
+    const ncsS=cl[sec].filter(i=>v.respostas?.[i.id]==='NC');
+    if(!ncsS.length)return'';
+    return`<div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:800;color:#374151;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #F3F4F6">${sec}</div>
+      ${ncsS.map(item=>`<div style="margin-bottom:10px;padding:10px;background:#FFF5F5;border-radius:10px;border:1px solid #FECACA">
+        <div style="font-size:12px;color:#7F1D1D;font-weight:600">✗ ${item.item}</div>
+        ${v.notas?.[item.id]?`<div style="font-size:11px;color:#6B7280;margin-top:6px;padding-top:6px;border-top:1px solid #FEE2E2"><strong>Observação:</strong> ${v.notas[item.id]}</div>`:''}
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+
+  const clFullHTML=Object.keys(cl).map(sec=>`
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:800;color:#1B4332;padding:5px 8px;background:#F0FDF4;border-left:3px solid #1B4332;margin-bottom:6px">${sec}</div>
+      ${cl[sec].map(item=>{
+        const r=v.respostas?.[item.id];
+        const cor=r==='C'?'#10B981':r==='NC'?'#EF4444':r==='NA'?'#9CA3AF':'#D1D5DB';
+        const bg=r==='C'?'#F0FDF4':r==='NC'?'#FFF5F5':'#FAFAFA';
+        return`<div style="background:${bg};border-left:3px solid ${cor};padding:5px 8px 5px 10px;margin-bottom:3px;border-radius:2px;font-size:11px">
+          <span style="color:${cor};font-weight:800;margin-right:6px">[${r||'—'}]</span>${item.item}
+          ${v.notas?.[item.id]?`<div style="font-size:10px;color:#6B7280;margin-top:3px;padding-left:20px"><em>Obs.: ${v.notas[item.id]}</em></div>`:''}
+        </div>`;
+      }).join('')}
+    </div>`).join('');
+
+  const quantCampos=CAMPOS_QUANTITATIVOS[v.modId]||[];
+  const statusCores={'Conforme – sem não conformidades':'#10B981','Conforme com ressalvas menores':'#34D399','Parcialmente conforme – ações necessárias':'#F59E0B','Não conforme – ação imediata exigida':'#EF4444','Situação crítica – risco ambiental/saúde pública':'#7F1D1D'};
+
+  const onHome=somenteLeitura
+    ?`G.histViewIdx=null;render()`
+    :`finalizarVistoria()`;
+
+  return`<div class="screen">
+  <div class="hdr" style="padding:48px 16px 28px;border-radius:0">
+    ${logoQM(180,true)}
+    <div style="margin-top:14px;font-size:13px;font-weight:900;letter-spacing:1px;opacity:.8">RELATÓRIO TÉCNICO DE VISTORIA</div>
+    <div style="font-size:20px;font-weight:900;margin-top:4px">${mod.label}</div>
+    <div style="font-size:11px;opacity:.7;margin-top:4px">${municipio} · ${v.meta?.data||''}</div>
+    ${v.meta?.numero_relatorio?`<div style="margin-top:6px;font-size:11px;opacity:.8">Relatório: ${v.meta.numero_relatorio}</div>`:''}
+  </div>
+  <div style="padding:16px">
+
+  <div class="card" style="text-align:center">
+    <div style="font-size:11px;font-weight:800;color:#6B7280;letter-spacing:1px;margin-bottom:16px">ÍNDICE DE CONFORMIDADE</div>
+    <div style="display:flex;justify-content:center;align-items:center;gap:16px">
+      <div style="position:relative;width:96px;height:96px">
+        ${ringHTML(indice,ci,96,8)}
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="font-size:24px;font-weight:900;color:${ci}">${indice}%</div>
+        </div>
+      </div>
+      <div style="text-align:left">
+        <div style="font-size:18px;font-weight:900;color:${ci}">${li}</div>
+        <div style="font-size:12px;color:#10B981;margin-top:4px">${conf.length} conformes</div>
+        <div style="font-size:12px;color:#EF4444">${ncsAll.length} não conformidades</div>
+        <div style="font-size:12px;color:#9CA3AF">${nasAll.length} não aplicáveis</div>
+        <div style="font-size:12px;color:#D1D5DB">${todos.length-aval.length-nasAll.length} não avaliados</div>
+      </div>
+    </div>
+    ${v.conclusao?.status?`<div style="margin-top:14px;padding:10px 16px;border-radius:10px;background:${(statusCores[v.conclusao.status]||'#6B7280')}15;border:1px solid ${(statusCores[v.conclusao.status]||'#6B7280')}30">
+      <div style="font-size:12px;font-weight:800;color:${statusCores[v.conclusao.status]||'#6B7280'}">${v.conclusao.status}</div>
+    </div>`:''}
+  </div>
+
+  <div class="card">
+    <div style="font-size:11px;font-weight:800;color:#6B7280;margin-bottom:12px">DADOS DA VISTORIA</div>
+    ${[['Município',municipio],['Objeto / Monitoramento',v.meta?.objeto||v.meta?.area],
+       ['Empreendedor',v.meta?.empreendedor_nome],['CNPJ Empreendedor',v.meta?.empreendedor_cnpj],
+       ['Gerenciador',v.meta?.gerenciador],['Data',v.meta?.data],
+       ['Horário',`${v.meta?.hora_inicio||''}${v.meta?.hora_fim?' – '+v.meta.hora_fim:''}`],
+       ['Contrato / Processo',v.meta?.contrato],
+       ['Condição Climática',`${v.meta?.clima||''}${v.meta?.temp?' · '+v.meta.temp+'°C':''}${v.meta?.umidade?' · UR: '+v.meta.umidade+'%':''}`],
+       ['Coordenadas GPS',v.meta?.lat&&v.meta?.lng?`${v.meta.lat}, ${v.meta.lng}`:null],
+    ].filter(r=>r[1]).map(([k,val])=>`<div style="display:flex;gap:8px;margin-bottom:6px;font-size:12px">
+      <div style="font-weight:700;color:#374151;width:140px;flex-shrink:0">${k}:</div>
+      <div style="color:#6B7280">${val}</div>
+    </div>`).join('')}
+    ${tecnsList.length?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid #F3F4F6">
+      <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:6px">Responsáveis Técnicos:</div>
+      ${tecnsList.map((t,i)=>`<div style="font-size:11px;color:#6B7280;margin-bottom:4px;padding-left:8px;line-height:1.5">
+        • <strong style="color:#374151">${t.nome}</strong>${t.crea?' · '+t.crea:''}${t.cargo?' · '+t.cargo:''}${t.especialidade?' ('+t.especialidade+')':''}
+        ${i===0?`<span style="margin-left:6px;font-size:9px;font-weight:800;color:#1B4332;background:#D1FAE5;padding:2px 6px;border-radius:99px">RESP. PRINCIPAL</span>`:''}
+      </div>`).join('')}
+    </div>`:''}
+    ${(v.meta?.acompanhantes||[]).filter(a=>a.nome).length?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid #F3F4F6">
+      <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:6px">Acompanhantes (Prefeitura):</div>
+      ${(v.meta.acompanhantes||[]).filter(a=>a.nome).map(a=>`<div style="font-size:11px;color:#6B7280;margin-bottom:4px;padding-left:8px">• ${a.nome}${a.cargo?' · '+a.cargo:''}${a.orgao?' · '+a.orgao:''}</div>`).join('')}
+    </div>`:''}
+  </div>
+
+  ${ncsAll.length?`<div class="card" style="border-color:#FEE2E2">
+    <div style="font-size:11px;font-weight:800;color:#EF4444;margin-bottom:12px">⚠️ NÃO CONFORMIDADES (${ncsAll.length})</div>
+    ${ncsSecHTML}
+  </div>`:`<div class="card" style="border-color:#BBF7D0"><div style="font-size:12px;font-weight:700;color:#10B981">✓ Nenhuma não conformidade identificada nesta vistoria.</div></div>`}
+
+  ${quantCampos.some(c=>v.quant?.[c.id])?`<div class="card">
+    <div style="font-size:11px;font-weight:800;color:#6B7280;margin-bottom:12px">📊 DADOS QUANTITATIVOS DE CAMPO</div>
+    ${quantCampos.filter(c=>v.quant?.[c.id]).map(c=>`<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid #F9FAFB">
+      <div style="color:#374151;font-weight:600">${c.label}</div>
+      <div style="color:#1B4332;font-weight:800">${v.quant[c.id]} ${c.unit}</div>
+    </div>`).join('')}
+    ${v.quant?.obs_quant?`<div style="font-size:11px;color:#6B7280;margin-top:8px;padding-top:8px;border-top:1px solid #E5E7EB"><strong>Obs.:</strong> ${v.quant.obs_quant}</div>`:''}
+  </div>`:''}
+
+  <div class="card">
+    <div style="font-size:11px;font-weight:800;color:#6B7280;margin-bottom:12px">PARECER TÉCNICO CONCLUSIVO</div>
+    ${[['Síntese das NCs',v.conclusao?.ncs_resumo],['Recomendações',v.conclusao?.recomendacoes],
+       ['Aspectos positivos',v.conclusao?.positivos],['Embasamento legal',v.conclusao?.base_legal],
+       ['Riscos identificados',v.conclusao?.riscos],['Observações finais',v.conclusao?.obs_finais],
+    ].filter(r=>r[1]).map(([k,val])=>`<div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px">${k}:</div>
+      <div style="font-size:12px;color:#6B7280;line-height:1.6">${val}</div>
+    </div>`).join('')}
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <button onclick="const d=this.nextElementSibling;d.style.display=d.style.display==='none'?'block':'none'"
+      style="width:100%;background:none;border:none;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer">
+      <div style="font-size:11px;font-weight:800;color:#6B7280">📋 CHECKLIST COMPLETO (${todos.length} itens)</div>
+      <span style="font-size:16px;color:#6B7280">▼</span>
+    </button>
+    <div style="display:none;padding:0 16px 16px">${clFullHTML}</div>
+  </div>
+
+  <div style="background:#F9FAFB;border-radius:16px;padding:16px;margin-bottom:14px;border:1px dashed #D1D5DB">
+    <div style="text-align:center;margin-bottom:14px">${logoQM(200,false,true)}</div>
+    <div style="font-size:10px;color:#9CA3AF;margin-bottom:10px;text-align:center;letter-spacing:1px;font-weight:700">RESPONSÁVEIS TÉCNICOS – QUEIROZ MARRA SOLUÇÕES INTEGRADAS</div>
+    <div style="background:#fff;border-radius:10px;padding:10px 14px;margin-bottom:8px;border:1px solid #E5E7EB;text-align:center">
+      <div style="font-size:13px;font-weight:800;color:#1B4332">MAURO MAURICIO BRANDÃO DIAS SILVA</div>
+      <div style="font-size:11px;color:#6B7280">CREA – GO: 1021572195D</div>
+      <div style="font-size:11px;color:#6B7280">ENGENHEIRO CIVIL E SEGURANÇA DO TRABALHO</div>
+    </div>
+    <div style="background:#fff;border-radius:10px;padding:10px 14px;margin-bottom:8px;border:1px solid #E5E7EB;text-align:center">
+      <div style="font-size:13px;font-weight:800;color:#1B4332">RHILKEY PAULO HUNGRIA DE LIMA E SILVA</div>
+      <div style="font-size:11px;color:#6B7280">CREA – GO: 1013565215D</div>
+      <div style="font-size:11px;color:#6B7280">ENGENHEIRO AMBIENTAL E SEGURANÇA DO TRABALHO</div>
+    </div>
+    <div style="text-align:center;margin-top:10px">
+      <div style="font-size:10px;color:#9CA3AF">Queiroz Marra Soluções Integradas Ltda. · CNPJ 29.684.369/0001-42</div>
+      <div style="font-size:9px;color:#D1D5DB;margin-top:2px">Av. 136 Nº 960, Ed. Executive Tower, Sala 1303-A, Setor Marista, Goiânia-GO</div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <button id="pdf-btn" onclick="gerarPDF(${somenteLeitura?G.histViewIdx:'null'})"
+      style="width:100%;background:#1B4332;color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+      📄 Exportar PDF completo
+    </button>
+    <button onclick="${onHome}" class="btn" style="background:#0A1628">
+      ${somenteLeitura?'← Voltar ao Histórico':'✓ Concluir e Salvar no Histórico'}
+    </button>
+  </div>
+  </div></div>`;
+}
+
+// ═══════════════════════════════════════════════
+// HISTÓRICO — idêntico ao original
+// ═══════════════════════════════════════════════
+function buildHistorico(){
+  const hist=G.historico;
+  const cf=G.cidFiltro;
+  const cidNome=cf?G.cidades.find(c=>c.id===cf)?.nome:null;
+  const listaIdx=hist.map((v,i)=>({...v,_oi:i})).reverse();
+  const lista=cf?listaIdx.filter(v=>v.meta?.cidadeId===cf):listaIdx;
+
+  const rows=lista.map(v=>{
+    const mod=MODULOS[v.modId]||{};
+    const cid=G.cidades.find(c=>c.id===v.meta?.cidadeId);
+    const mun=cid?.nome||v.meta?.municipio_manual||v.meta?.area||'—';
+    const ci=corIndice(v.indice);
+    const ant=hist.slice(0,v._oi).reverse().find(x=>{
+      const c2=G.cidades.find(c=>c.id===x.meta?.cidadeId);
+      return x.modId===v.modId&&(c2?.nome||x.meta?.municipio_manual||x.meta?.area)===mun;
+    });
+    const ev=ant!=null?(v.indice-ant.indice):null;
+    return`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:800;color:#111827">${mod.icon||''} ${mod.label||v.modId}</div>
+          <div style="font-size:13px;color:#374151;font-weight:700;margin-top:2px">${mun}</div>
+          <div style="font-size:11px;color:#9CA3AF;margin-top:1px">${v.meta?.data||''}${v.meta?.numero_relatorio?' · '+v.meta.numero_relatorio:''}</div>
+          ${(v.meta?.tecnicos||[]).filter(t=>t.nome).length?`<div style="font-size:11px;color:#9CA3AF">${(v.meta.tecnicos||[]).filter(t=>t.nome).map(t=>t.nome).join(' · ')}</div>`:''}
+          ${v.conclusao?.status?`<div style="margin-top:6px;font-size:11px;font-weight:700;color:#6B7280">${v.conclusao.status}</div>`:''}
+          ${ev!==null?`<div style="margin-top:5px;font-size:11px;font-weight:700;color:${ev>=0?'#10B981':'#EF4444'}">${ev>=0?'↑':'↓'} ${Math.abs(ev)}% vs anterior (${ant.indice}% → ${v.indice}%)</div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:12px">
+          <div style="font-size:26px;font-weight:900;color:${ci}">${v.indice}%</div>
+          <div style="font-size:9px;color:#9CA3AF;margin-bottom:8px">conformidade</div>
+          <button onclick="G.histViewIdx=${v._oi};render()" style="background:#1B4332;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:800;cursor:pointer;display:block;margin-bottom:6px;width:100%">📄 Ver</button>
+          <button onclick="excluirVistoria(${v._oi})" style="background:#FEE2E2;color:#DC2626;border:none;border-radius:8px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;display:block;width:100%">✕ Excluir</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return`<div class="screen">
+  <div class="hdr hdr-sm">
+    ${logoQM(160,true)}
+    <div style="font-size:18px;font-weight:900;margin-top:12px">📁 Histórico de Vistorias</div>
+    <div style="font-size:11px;opacity:.75;margin-top:4px">${hist.length} vistoria(s) armazenada(s) localmente</div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button onclick="exportBackup()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer">⬇ Exportar backup</button>
+      <label style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer">
+        ⬆ Importar backup<input type="file" accept=".json" style="display:none" onchange="importBackup(this)"/>
+      </label>
+    </div>
+  </div>
+  <div style="padding:16px">
+    ${cf?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:#1B4332;background:#D1FAE5;border-radius:20px;padding:4px 12px">📍 ${cidNome}</div>
+      <button onclick="G.cidFiltro=null;render()" style="background:none;border:none;font-size:12px;color:#9CA3AF;cursor:pointer">✕ Ver todas</button>
+    </div>`:''}
+    <div style="font-size:11px;font-weight:800;color:#6B7280;letter-spacing:1px;margin-bottom:14px">${cf?`VISTORIAS DE ${cidNome?.toUpperCase()} (${lista.length})`:`VISTORIAS REALIZADAS (${hist.length})`}</div>
+    ${lista.length?rows:`<div style="padding:40px;text-align:center;color:#9CA3AF">
+      <div style="font-size:40px;margin-bottom:10px">📁</div>
+      <div style="font-size:16px;font-weight:700">Nenhuma vistoria ${cf?'para '+cidNome:'realizada'}</div>
+      <div style="font-size:13px;margin-top:6px">As vistorias concluídas aparecerão aqui</div>
+    </div>`}
+  </div></div>`;
+}
+
+// ═══════════════════════════════════════════════
+// PDF — idêntico ao original
+// ═══════════════════════════════════════════════
+function gerarPDF(histIdx){
+  const v=histIdx!==null&&histIdx!=='null'&&histIdx!==undefined?G.historico[histIdx]:{
+    modId:G.modSel,meta:G.meta,respostas:G.respostas,notas:G.notas,
+    conclusao:G.conclusao,quant:G.quant,indice:calcIndice(G.modSel,G.respostas)
+  };
+  const mod=MODULOS[v.modId]||{label:'',lei:'',icon:'',cor:'#1B4332'};
+  const cid=G.cidades.find(c=>c.id===v.meta?.cidadeId);
+  const municipio=cid?`${cid.nome} – ${cid.uf}`:v.meta?.municipio_manual||v.meta?.area||'Município';
+  const cl=CHECKLIST[v.modId]||{};
+  const todos=Object.values(cl).flat();
+  const aval=todos.filter(i=>v.respostas?.[i.id]==='C'||v.respostas?.[i.id]==='NC');
+  const conf=aval.filter(i=>v.respostas?.[i.id]==='C');
+  const ncsAll=todos.filter(i=>v.respostas?.[i.id]==='NC');
+  const nasAll=todos.filter(i=>v.respostas?.[i.id]==='NA');
+  // CORRIGIDO: sempre recalcula das respostas reais, ignora valor salvo
+  const indice=aval.length?Math.round(conf.length/aval.length*100):0;
+  const ci=corIndice(indice);
+  const today=new Date();
+  const dataRel=today.toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const tecnsList=(v.meta?.tecnicos||[]).filter(t=>t.nome);
+
+  let ncsHTML='';
+  Object.keys(cl).forEach(sec=>{
+    const ncsS=cl[sec].filter(i=>v.respostas?.[i.id]==='NC');
+    if(!ncsS.length)return;
+    ncsHTML+=`<div class="section-title">${sec}</div>`;
+    ncsS.forEach(item=>{
+      ncsHTML+=`<div class="nc-item"><span class="nc-bullet">✗</span> <span>${item.item}</span>`;
+      if(v.notas?.[item.id])ncsHTML+=`<div class="nc-nota"><strong>Obs.:</strong> ${v.notas[item.id]}</div>`;
+      ncsHTML+=`</div>`;
+    });
+  });
+
+  let checkHTML='';
+  Object.keys(cl).forEach(sec=>{
+    const its=cl[sec];
+    const c=its.filter(i=>v.respostas?.[i.id]==='C').length;
+    const n=its.filter(i=>v.respostas?.[i.id]==='NC').length;
+    const na=its.filter(i=>v.respostas?.[i.id]==='NA').length;
+    const nd=its.filter(i=>!v.respostas?.[i.id]).length;
+    checkHTML+=`<div class="check-secao"><div class="check-secao-title">${sec} <span class="check-stats">(C:${c} | NC:${n} | NA:${na} | N.Av:${nd})</span></div>`;
+    its.forEach(item=>{
+      const r=v.respostas?.[item.id]||'—';
+      const cor=r==='C'?'#10B981':r==='NC'?'#EF4444':r==='NA'?'#9CA3AF':'#D1D5DB';
+      const bg=r==='C'?'#F0FDF4':r==='NC'?'#FFF5F5':'#FAFAFA';
+      checkHTML+=`<div class="check-item" style="background:${bg};border-left:3px solid ${cor}">
+        <span class="check-status" style="color:${cor}">[${r}]</span> ${item.item}
+        ${v.notas?.[item.id]?`<div class="check-nota"><em>Obs.:</em> ${v.notas[item.id]}</div>`:''}
+      </div>`;
+    });
+    checkHTML+=`</div>`;
+  });
+
+  const camposQ=CAMPOS_QUANTITATIVOS[v.modId]||[];
+  const hasQ=camposQ.some(c=>v.quant?.[c.id]);
+  let quantHTML='';
+  if(hasQ){
+    camposQ.filter(c=>v.quant?.[c.id]).forEach(c=>{quantHTML+=`<tr><td>${c.label}</td><td><strong>${v.quant[c.id]} ${c.unit}</strong></td></tr>`});
+    if(v.quant?.obs_quant)quantHTML+=`<tr><td colspan="2"><em>Obs.:</em> ${v.quant.obs_quant}</td></tr>`;
+  }
+
+  const assHTML=`
+    <div class="assinatura-block">
+      <div class="assin-linha"></div>
+      <div class="assin-nome">MAURO MAURICIO BRANDÃO DIAS SILVA</div>
+      <div class="assin-sub">CREA &ndash; GO: 1021572195D</div>
+      <div class="assin-sub">ENGENHEIRO CIVIL E SEGURANÇA DO TRABALHO</div>
+    </div>
+    <div class="assinatura-block">
+      <div class="assin-linha"></div>
+      <div class="assin-nome">RHILKEY PAULO HUNGRIA DE LIMA E SILVA</div>
+      <div class="assin-sub">CREA &ndash; GO: 1013565215D</div>
+      <div class="assin-sub">ENGENHEIRO AMBIENTAL E SEGURANÇA DO TRABALHO</div>
+    </div>`;
+
+  const secMun=cid?.secretario||v.meta?.secretario||'';
+  const orgaoGest=v.meta?.gerenciador||cid?.gerenciador||'Secretaria Municipal de Meio Ambiente';
+  const aceiteHTML=secMun?`
+    <div class="page-break"></div>
+    <div style="border:1px dashed #ccc;padding:20px;margin-top:10px">
+      <div class="box-title">X. ACEITE E APROVAÇÃO DO RELATÓRIO TÉCNICO</div>
+      <p>O município de <strong>${municipio}</strong>, representado pela ${orgaoGest}, declara ter pleno conhecimento e aprova formalmente o conteúdo técnico apresentado neste Relatório Técnico de Vistoria, bem como todas as ações a eles correlacionadas.</p>
+      <p><em>Dou fé e ciência.</em></p>
+      <p>Goiânia – GO, ${dataRel}</p>
+      <div class="assinatura-block" style="margin-top:30px;text-align:center;margin-left:auto;margin-right:auto">
+        <div class="assin-linha" style="max-width:300px;margin:0 auto"></div>
+        <div class="assin-nome">${secMun}</div>
+        <div class="assin-sub">SECRETÁRIO(A) MUNICIPAL DE MEIO AMBIENTE</div>
+        ${cid?.cnpj_sema?`<div class="assin-sub">CNPJ: ${cid.cnpj_sema}</div>`:''}
+      </div>
+    </div>`:'';
+
+  const html=`<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"/>
+<title>Relatório Técnico – ${municipio} – ${v.meta?.data||''}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;font-size:11pt;color:#1a1a1a;background:#fff}
+@page{margin:18mm 15mm 18mm 15mm;size:A4 portrait}
+@media print{.page-break{page-break-before:always}.no-break{page-break-inside:avoid}}
+.header{background:linear-gradient(135deg,#0A1628 0%,#1B4332 100%);color:#fff;padding:18px 20px;margin-bottom:16px;border-radius:4px}
+.header-logo{font-size:18pt;font-weight:900;letter-spacing:1px;margin-bottom:4px}
+.header-sub{font-size:9pt;opacity:.8;margin-bottom:2px}
+.header-title{font-size:13pt;font-weight:900;margin-top:8px}
+.header-meta{font-size:9pt;opacity:.75;margin-top:2px}
+.rt-number{font-size:10pt;font-weight:700;color:#D1FAE5;margin-top:6px}
+.section-h1{font-size:12pt;font-weight:900;color:#0A1628;border-bottom:2px solid #1B4332;padding-bottom:4px;margin:18px 0 10px;text-transform:uppercase;letter-spacing:.5px}
+.info-table{width:100%;border-collapse:collapse;margin-bottom:14px}
+.info-table td{padding:5px 8px;font-size:10pt;border-bottom:1px solid #F3F4F6}
+.info-table td:first-child{font-weight:700;color:#374151;width:38%}
+.conformidade-box{border:2px solid #E5E7EB;border-radius:6px;padding:14px 20px;display:flex;align-items:center;gap:20px;margin-bottom:14px}
+.indice-circle{width:72px;height:72px;border-radius:50%;background:#fff;border:6px solid;display:flex;align-items:center;justify-content:center;font-size:18pt;font-weight:900;flex-shrink:0}
+.indice-status{font-size:14pt;font-weight:900;margin-bottom:4px}
+.indice-stats{font-size:9pt;color:#6B7280;line-height:1.6}
+.nc-item{background:#FFF5F5;border-left:3px solid #EF4444;padding:7px 10px;margin-bottom:6px;border-radius:2px;font-size:10pt}
+.nc-bullet{color:#EF4444;font-weight:900;margin-right:6px}
+.nc-nota{font-size:9pt;color:#6B7280;margin-top:5px;padding-top:5px;border-top:1px solid #FECACA}
+.section-title{font-size:10pt;font-weight:800;color:#374151;margin:12px 0 6px;padding-bottom:3px;border-bottom:1px solid #E5E7EB}
+.parecer-block{border:1px solid #E5E7EB;border-radius:4px;padding:12px 14px;margin-bottom:10px}
+.parecer-label{font-size:9pt;font-weight:800;color:#374151;margin-bottom:5px;text-transform:uppercase}
+.parecer-text{font-size:10pt;color:#374151;line-height:1.7}
+.quant-table{width:100%;border-collapse:collapse;margin-bottom:14px}
+.quant-table th{background:#F3F4F6;font-size:9pt;font-weight:800;padding:6px 10px;text-align:left;border:1px solid #E5E7EB}
+.quant-table td{padding:6px 10px;font-size:10pt;border:1px solid #E5E7EB}
+.check-secao{margin-bottom:14px;page-break-inside:avoid}
+.check-secao-title{font-size:10pt;font-weight:800;color:#1B4332;padding:5px 8px;background:#F0FDF4;border-left:3px solid #1B4332;margin-bottom:4px}
+.check-stats{font-weight:400;font-size:9pt;color:#6B7280}
+.check-item{padding:5px 8px 5px 10px;margin-bottom:3px;font-size:9.5pt;line-height:1.5;border-radius:2px}
+.check-status{font-weight:800;font-size:10pt;margin-right:6px}
+.check-nota{font-size:9pt;color:#6B7280;margin-top:3px;padding-left:20px}
+.footer{margin-top:30px;padding-top:14px;border-top:2px solid #1B4332;text-align:center}
+.footer-logo{font-size:14pt;font-weight:900;color:#0A1628;letter-spacing:1px}
+.footer-info{font-size:8pt;color:#9CA3AF;margin-top:4px;line-height:1.5}
+.assinaturas{display:flex;gap:30px;flex-wrap:wrap;margin-top:30px;justify-content:center}
+.assinatura-block{text-align:center;min-width:200px;flex:1;max-width:260px}
+.assin-linha{border-bottom:1px solid #374151;margin-bottom:6px;padding-top:28px}
+.assin-nome{font-size:11pt;font-weight:800;color:#0A1628}
+.assin-sub{font-size:9pt;color:#6B7280;margin-top:2px}
+.assin-resp{font-size:8pt;font-weight:800;color:#1B4332;margin-top:3px;background:#D1FAE5;padding:2px 8px;border-radius:99px;display:inline-block}
+.box-title{font-size:12pt;font-weight:900;color:#0A1628;margin-bottom:10px;border-bottom:2px solid #1B4332;padding-bottom:4px;text-transform:uppercase}
+p{margin:8px 0;line-height:1.7}
+.status-badge{display:inline-block;padding:4px 14px;border-radius:99px;font-weight:800;font-size:10pt;margin-bottom:8px}
+</style></head><body>
+<div class="header">
+  <div class="header-logo">QUEIROZ MARRA SOLUÇÕES INTEGRADAS</div>
+  <div class="header-sub">Consultoria em Resíduos Sólidos Urbanos</div>
+  <div class="header-title">RELATÓRIO TÉCNICO DE VISTORIA</div>
+  <div class="header-meta">${mod.label} · ${municipio} · ${v.meta?.data||''}</div>
+  ${v.meta?.numero_relatorio?`<div class="rt-number">Nº ${v.meta.numero_relatorio}</div>`:''}
+</div>
+<div class="section-h1">I. Apresentação</div>
+<p>A presente vistoria técnica integra o processo de monitoramento e acompanhamento especializado das ações previstas na gestão de resíduos sólidos do Município de <strong>${municipio}</strong>. Este procedimento tem caráter avaliativo, preventivo e orientativo, voltado à verificação do desempenho e da conformidade dos instrumentos municipais de gestão ambiental, especialmente no que diz respeito ao <strong>${mod.label}</strong>.</p>
+<p>A análise técnica tem por objetivo levantar, registrar e avaliar indicadores, práticas adotadas, conformidades, não conformidades e necessidades de adequação dos sistemas que compõem a gestão municipal de resíduos sólidos, nos termos da Lei nº 12.305/2010 (PNRS) e demais normas aplicáveis.</p>
+${v.meta?.obs_iniciais?`<p><strong>Contexto da visita:</strong> ${v.meta.obs_iniciais}</p>`:''}
+<div class="section-h1">II. Identificação</div>
+<table class="info-table">
+  <tr><td>Tipo de Vistoria</td><td>${mod.label}</td></tr>
+  <tr><td>Município</td><td>${municipio}</td></tr>
+  <tr><td>Data da Vistoria</td><td>${v.meta?.data||''}</td></tr>
+  <tr><td>Horário</td><td>${[v.meta?.hora_inicio,v.meta?.hora_fim].filter(Boolean).join(' às ')||''}</td></tr>
+  ${v.meta?.contrato?`<tr><td>Contrato / Processo</td><td>${v.meta.contrato}</td></tr>`:''}
+  ${v.meta?.numero_relatorio?`<tr><td>Nº do Relatório</td><td>${v.meta.numero_relatorio}</td></tr>`:''}
+</table>
+<div class="section-h1">III. Empreendedor e Gerenciador</div>
+<table class="info-table">
+  ${v.meta?.empreendedor_nome?`<tr><td>Empreendedor</td><td>${v.meta.empreendedor_nome}</td></tr>`:''}
+  ${v.meta?.empreendedor_cnpj?`<tr><td>CNPJ Empreendedor</td><td>${v.meta.empreendedor_cnpj}</td></tr>`:''}
+  ${v.meta?.gerenciador?`<tr><td>Gerenciador</td><td>${v.meta.gerenciador}</td></tr>`:''}
+  ${v.meta?.gerenciador_cnpj?`<tr><td>CNPJ Gerenciador</td><td>${v.meta.gerenciador_cnpj}</td></tr>`:''}
+  ${v.meta?.secretario?`<tr><td>Secretário(a)</td><td>${v.meta.secretario}</td></tr>`:''}
+  ${v.meta?.area?`<tr><td>Local / Objeto</td><td>${v.meta.area}</td></tr>`:''}
+  ${v.meta?.lat&&v.meta?.lng?`<tr><td>Coordenadas GPS</td><td>${v.meta.lat}, ${v.meta.lng}</td></tr>`:''}
+  ${v.meta?.clima?`<tr><td>Condição Climática</td><td>${v.meta.clima}${v.meta?.temp?' · '+v.meta.temp+'°C':''}${v.meta?.umidade?' · UR: '+v.meta.umidade+'%':''}</td></tr>`:''}
+</table>
+${(v.meta?.acompanhantes||[]).filter(a=>a.nome).length?`<table class="info-table">
+  <tr><td colspan="2" style="font-weight:800;background:#F9FAFB">Acompanhantes (Prefeitura)</td></tr>
+  ${(v.meta.acompanhantes||[]).filter(a=>a.nome).map(a=>`<tr><td>${a.nome}</td><td>${[a.cargo,a.orgao].filter(Boolean).join(' · ')}</td></tr>`).join('')}
+</table>`:''}
+<div class="section-h1">IV. Metodologia</div>
+<p>A metodologia adotada fundamenta-se em abordagem técnica integrada, composta por vistoria <em>in loco</em>, análise documental e verificação de conformidade baseada em checklist estruturado com <strong>${todos.length} itens</strong> distribuídos em ${Object.keys(cl).length} seções temáticas. As inspeções foram realizadas diretamente nas áreas e atividades relacionadas à gestão de resíduos, permitindo observar de forma objetiva as condições operacionais e ambientais.</p>
+<p>Os critérios de avaliação seguem as normas: <em>${mod.lei}</em>.</p>
+<div class="section-h1">V. Índice de Conformidade</div>
+${(function(){
+  var total = todos.length;
+  var naoAval = total - aval.length - nasAll.length;
+  var pctC   = total>0 ? Math.round(conf.length/total*100)    : 0;
+  var pctNC  = total>0 ? Math.round(ncsAll.length/total*100)  : 0;
+  var pctNA  = total>0 ? Math.round(nasAll.length/total*100)  : 0;
+  var pctND  = total>0 ? Math.round(naoAval/total*100)        : 0;
+
+  function bar(pct, cor, label, n) {
+    return '<div style="margin-bottom:10px">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">'
+      + '<span style="font-size:9pt;font-weight:700;color:#374151">' + label + '</span>'
+      + '<span style="font-size:9pt;font-weight:900;color:' + cor + '">' + n + ' itens &nbsp;(' + pct + '%)</span>'
+      + '</div>'
+      + '<div style="background:#F3F4F6;border-radius:99px;height:10px;overflow:hidden">'
+      + '<div style="width:' + pct + '%;background:' + cor + ';height:10px;border-radius:99px;transition:width .3s"></div>'
+      + '</div>'
+      + '</div>';
+  }
+
+  var statusBg = ci + '18';
+  var html = '<div class="no-break" style="border:2px solid ' + ci + ';border-radius:10px;overflow:hidden;margin-bottom:14px">'
+    // Cabeçalho com % grande
+    + '<div style="background:' + ci + ';padding:14px 20px;display:flex;align-items:center;gap:18px">'
+    + '<div style="font-size:40pt;font-weight:900;color:#fff;line-height:1">' + indice + '%</div>'
+    + '<div>'
+    + '<div style="font-size:14pt;font-weight:900;color:#fff">' + (indice>=85?'CONFORME':indice>=60?'ATENÇÃO':'NÃO CONFORME') + '</div>'
+    + '<div style="font-size:9pt;color:#ffffffCC;margin-top:2px">Índice de Conformidade · ' + total + ' itens avaliados no checklist</div>'
+    + (v.conclusao&&v.conclusao.status?'<div style="margin-top:6px;font-size:9pt;font-weight:700;color:#fff;background:#ffffff30;display:inline-block;padding:2px 10px;border-radius:99px">' + v.conclusao.status + '</div>':'')
+    + '</div>'
+    + '</div>'
+    // Corpo com 4 barras
+    + '<div style="padding:16px 20px;background:#fff">'
+    + '<div style="font-size:8pt;font-weight:800;color:#9CA3AF;letter-spacing:1px;margin-bottom:12px">DISTRIBUIÇÃO DOS ' + total + ' ITENS DO CHECKLIST</div>'
+    + bar(pctC,  '#1E7D3A', '✓  Conformes',       conf.length)
+    + bar(pctNC, '#B52020', '✗  Não Conformes',    ncsAll.length)
+    + bar(pctNA, '#6B7280', '—  Não Aplicáveis',   nasAll.length)
+    + bar(pctND, '#D1D5DB', '·  Não Avaliados',    naoAval)
+    // Linha de totais
+    + '<div style="margin-top:12px;padding-top:10px;border-top:1px solid #E5E7EB;display:flex;gap:8px;flex-wrap:wrap">'
+    + '<span style="background:#D4EDDA;color:#1E7D3A;font-size:8pt;font-weight:800;padding:3px 10px;border-radius:99px">✓ ' + conf.length   + ' Conformes</span>'
+    + '<span style="background:#FBDDDD;color:#B52020;font-size:8pt;font-weight:800;padding:3px 10px;border-radius:99px">✗ ' + ncsAll.length + ' N. Conformes</span>'
+    + '<span style="background:#F3F4F6;color:#6B7280;font-size:8pt;font-weight:800;padding:3px 10px;border-radius:99px">— ' + nasAll.length + ' N. Aplicáveis</span>'
+    + (naoAval>0?'<span style="background:#F9FAFB;color:#9CA3AF;font-size:8pt;font-weight:800;padding:3px 10px;border-radius:99px">· ' + naoAval + ' Não Avaliados</span>':'')
+    + '</div>'
+    + '</div>'
+    + '</div>';
+  return html;
+})()}
+<div class="section-h1">VI. Não Conformidades Identificadas${ncsAll.length?' ('+ncsAll.length+')':''}</div>
+${ncsAll.length?ncsHTML:`<p style="color:#10B981;font-weight:700">✓ Nenhuma não conformidade identificada nesta vistoria.</p>`}
+${hasQ?`<div class="section-h1">VII. Dados Quantitativos de Campo</div>
+<table class="quant-table"><tr><th>Parâmetro</th><th>Valor medido</th></tr>${quantHTML}</table>`:''}
+<div class="section-h1">VIII. Parecer Técnico Conclusivo</div>
+${v.conclusao?.ncs_resumo?`<div class="parecer-block no-break"><div class="parecer-label">Síntese das Não Conformidades</div><div class="parecer-text">${v.conclusao.ncs_resumo}</div></div>`:''}
+${v.conclusao?.recomendacoes?`<div class="parecer-block no-break"><div class="parecer-label">Recomendações e Ações Corretivas</div><div class="parecer-text">${v.conclusao.recomendacoes}</div></div>`:''}
+${v.conclusao?.positivos?`<div class="parecer-block no-break"><div class="parecer-label">Aspectos Positivos Observados</div><div class="parecer-text">${v.conclusao.positivos}</div></div>`:''}
+${v.conclusao?.base_legal?`<div class="parecer-block no-break"><div class="parecer-label">Embasamento Legal</div><div class="parecer-text">${v.conclusao.base_legal}</div></div>`:''}
+${v.conclusao?.riscos?`<div class="parecer-block no-break"><div class="parecer-label">Riscos Identificados</div><div class="parecer-text">${v.conclusao.riscos}</div></div>`:''}
+${v.conclusao?.obs_finais?`<div class="parecer-block no-break"><div class="parecer-label">Observações Finais</div><div class="parecer-text">${v.conclusao.obs_finais}</div></div>`:''}
+<div class="page-break"></div>
+<div class="section-h1">IX. Checklist Técnico Completo</div>
+${checkHTML}
+<div class="page-break"></div>
+<div class="section-h1">X. Disposições Finais</div>
+<p>As informações, análises e pareceres técnicos apresentados neste relatório são válidos para a data de realização da vistoria, considerando as condições observadas durante a visita técnica. Alterações ocorridas posteriormente não estão abrangidas pelo escopo deste documento.</p>
+<p>O documento consolida dados e informações técnicas essenciais ao processo contínuo de monitoramento, avaliação e aprimoramento dos planos municipais, contribuindo para o fortalecimento das políticas públicas de gestão ambiental.</p>
+<p>Goiânia – GO, ${dataRel}.</p>
+<div class="footer">
+  <div class="footer-logo">QUEIROZ MARRA SOLUÇÕES INTEGRADAS LTDA.</div>
+  <div class="footer-info">CNPJ 29.684.369/0001-42 · Av. 136 Nº 960, Ed. Executive Tower, Sala 1303-A, Setor Marista, Goiânia-GO<br/>Fone: (62) 9 9162-2144 · queirozmarrasolucoes@gmail.com · queirozmarra.com</div>
+  <div class="assinaturas">${assHTML}</div>
+</div>
+${aceiteHTML}
+</body></html>`;
+
+  const win=window.open('','_blank','width=900,height=700');
+  if(!win){alert('Pop-up bloqueado. Permita pop-ups para este site e tente novamente.');return}
+  win.document.write(html);win.document.close();win.focus();
+  setTimeout(()=>win.print(),600);
+}
+
+// ═══════════════════════════════════════════════
+// SERVICE WORKER (PWA offline Safari iOS)
+// ═══════════════════════════════════════════════
+function registerSW(){
+  if(window.Capacitor) return;
+  if(!('serviceWorker' in navigator))return;
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  loadLocal();
+  registerSW();
+  render();
+  initFB().catch(()=>{});
+});
+window.addEventListener('online',()=>syncFS());
+</script>
+</body>
+</html>

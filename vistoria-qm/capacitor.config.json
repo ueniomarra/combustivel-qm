@@ -1,0 +1,36 @@
+{
+  "appId": "br.com.queirozmarra.vistoria",
+  "appName": "Vistoria QM",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "launchAutoHide": true,
+      "backgroundColor": "#0A1628",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false,
+      "iosSpinnerStyle": "large",
+      "spinnerColor": "#1B4332"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0A1628"
+    }
+  },
+  "android": {
+    "buildOptions": {
+      "keystorePath": "keystore/vistoria-qm.keystore",
+      "keystoreAlias": "vistoriaqm"
+    }
+  },
+  "ios": {
+    "scheme": "VistoriaQM",
+    "contentInset": "automatic"
+  }
+}
