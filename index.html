@@ -9,6 +9,7 @@
 <title>Combustível — Queiroz Marra</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 :root{--bg:#0c0f14;--surface:#161a22;--surface2:#1e232d;--border:#2a303c;--text:#e8eaf0;--text2:#8a91a0;--accent:#0072CE;--accentLight:rgba(0,114,206,0.12);--red:#ff4d6a;--amber:#ffb84d;--blue:#4d9fff;--green:#00c896;--purple:#a78bfa;--arla:#38bdf8;--radius:14px}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -44,6 +45,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .result-val.arla{color:var(--arla)}
 .btn-save{width:100%;padding:15px;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;background:var(--accent);color:#fff;border:none;border-radius:12px;cursor:pointer;margin-top:6px;transition:transform .1s,opacity .2s;letter-spacing:.3px}
 .btn-save:active{transform:scale(.97);opacity:.85}
+.btn-save:disabled{opacity:.5;cursor:default}
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
 .stat-card.wide{grid-column:1/-1}
@@ -55,12 +57,18 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .month-selector button{background:var(--accentLight);border:none;color:var(--accent);font-size:18px;cursor:pointer;padding:6px 12px;font-weight:700;border-radius:8px}
 .month-selector button:active{opacity:.6}
 .month-selector span{font-size:14px;font-weight:700}
+.vehicle-bar{display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--surface2);border-bottom:1px solid var(--border);position:sticky;top:62px;z-index:90}
+.vehicle-bar select{flex:1;padding:10px 12px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238a91a0'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.vehicle-bar button{flex-shrink:0;width:38px;height:38px;background:var(--accentLight);border:none;color:var(--accent);border-radius:10px;font-size:18px;font-weight:700;cursor:pointer}
+.vehicle-empty{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:24px 16px;text-align:center;margin-bottom:14px}
+.vehicle-empty p{font-size:13px;color:var(--text2);margin-bottom:12px}
 .record-list{display:flex;flex-direction:column;gap:6px}
 .record-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .record-main{padding:12px 14px;display:flex;justify-content:space-between;align-items:center}
 .record-date{font-size:13px;font-weight:700;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
 .record-details{font-size:11px;color:var(--text2);margin-top:2px}
 .record-arla{font-size:11px;color:var(--arla);margin-top:1px}
+.record-vehicle{font-size:10px;color:var(--accent);margin-top:1px;font-weight:700}
 .record-total{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--green);text-align:right}
 .record-km{font-size:11px;color:var(--text2);margin-top:2px;text-align:right}
 .record-actions{border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr}
@@ -82,8 +90,9 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .btn-export:active{opacity:.6}
 .btn-danger{width:100%;padding:13px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;background:none;color:var(--red);border:1px solid rgba(255,77,106,.25);border-radius:12px;cursor:pointer;margin-top:8px}
 .btn-danger:active{opacity:.6}
-.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#fff;padding:11px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap}
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#fff;padding:11px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--red)}
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;padding:6px 0 max(6px,env(safe-area-inset-bottom));z-index:100}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--text2);cursor:pointer;font-size:10px;font-weight:600;padding:6px 0;font-family:'DM Sans',sans-serif}
 .nav-item.active{color:var(--accent)}
@@ -104,9 +113,56 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .modal-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
 .btn-cancel{padding:14px;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:12px;cursor:pointer}
 .btn-confirm{padding:14px;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;background:var(--accent);color:#fff;border:none;border-radius:12px;cursor:pointer}
+/* auth */
+#auth-screen{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;padding:24px}
+.auth-box{max-width:360px;margin:0 auto;width:100%}
+.auth-logo{text-align:center;margin-bottom:28px}
+.auth-logo span{font-family:'Space Mono',monospace;font-size:32px;font-weight:700;color:#fff;letter-spacing:3px}
+.auth-logo p{font-size:12px;color:var(--text2);margin-top:6px;letter-spacing:.5px}
+.auth-tabs{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:20px}
+.auth-tab{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:700;border-radius:9px;cursor:pointer;color:var(--text2)}
+.auth-tab.active{background:var(--accent);color:#fff}
+.auth-msg{font-size:12px;padding:10px 12px;border-radius:8px;margin-bottom:12px;display:none}
+.auth-msg.show{display:block}
+.auth-msg.err{background:rgba(255,77,106,.12);color:var(--red)}
+.auth-msg.ok{background:rgba(0,200,150,.12);color:var(--green)}
+.auth-link{text-align:center;font-size:12px;color:var(--text2);margin-top:14px;cursor:pointer;text-decoration:underline}
+/* config */
+.veh-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.veh-row.inativo{opacity:.45}
+.veh-name{font-size:14px;font-weight:700}
+.veh-plate{font-size:11px;color:var(--text2);margin-top:2px}
+.veh-actions{display:flex;gap:6px}
+.veh-actions button{padding:7px 10px;font-size:11px;font-weight:700;border:none;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.veh-btn-edit{background:var(--accentLight);color:var(--accent)}
+.veh-btn-toggle{background:var(--surface2);color:var(--text2)}
+.account-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:20px}
+.account-email{font-size:13px;font-weight:600}
+.account-label{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+.section-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin:20px 0 10px}
+.section-title:first-child{margin-top:0}
 </style>
 </head>
 <body>
+
+<!-- ===== AUTH SCREEN ===== -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo"><span>QM</span><p>Combustível — Controle de Frota</p></div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login" onclick="setAuthMode('login')">Entrar</div>
+      <div class="auth-tab" id="tab-signup" onclick="setAuthMode('signup')">Criar conta</div>
+    </div>
+    <div class="auth-msg" id="auth-msg"></div>
+    <div class="form-group"><label>E-mail</label><input type="email" id="auth-email" autocomplete="username" placeholder="voce@exemplo.com"></div>
+    <div class="form-group"><label>Senha</label><input type="password" id="auth-pass" autocomplete="current-password" placeholder="mínimo 6 caracteres"></div>
+    <button class="btn-save" id="auth-submit" onclick="submitAuth()">ENTRAR</button>
+    <div class="auth-link" onclick="resetPassword()">Esqueci minha senha</div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app" style="display:none">
 
 <div class="header">
   <div class="header-logo"><span>QM</span></div>
@@ -117,8 +173,14 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   </div>
 </div>
 
+<div class="vehicle-bar" id="vehicle-bar-abastecer">
+  <select id="vehicle-select" onchange="onVehicleSelectChange()"></select>
+  <button onclick="openVehicleModal(null)" title="Novo veículo">+</button>
+</div>
+
 <!-- ABASTECER -->
 <div id="sec-abastecer" class="section active">
+  <div id="vehicle-empty-box"></div>
   <div id="last-fill-box"></div>
   <div class="form-group"><label>Data</label><input type="date" id="f-data"></div>
   <div class="form-group">
@@ -159,7 +221,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     </select>
   </div>
 
-  <!-- ARLA 32 -->
   <div class="special-box arla-box">
     <div class="box-title">🔵 Arla 32 <span class="opt-label">(opcional — preencha se abasteceu)</span></div>
     <div class="form-row">
@@ -178,7 +239,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
     </div>
   </div>
 
-  <!-- DESCONTO -->
   <div class="special-box desconto-box">
     <div class="box-title">🏷 Desconto obtido</div>
     <div class="form-row">
@@ -198,11 +258,14 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   </div>
 
   <div class="form-group"><label>Posto <span class="opt-label">(opcional)</span></label><input type="text" id="f-posto" placeholder="Ex: Shell BR-153"></div>
-  <button class="btn-save" onclick="salvar()">REGISTRAR ABASTECIMENTO</button>
+  <button class="btn-save" id="btn-registrar" onclick="salvar()">REGISTRAR ABASTECIMENTO</button>
 </div>
 
 <!-- HISTÓRICO -->
 <div id="sec-historico" class="section">
+  <div class="vehicle-bar" style="position:static">
+    <select id="hist-vehicle-select" onchange="renderHist()"></select>
+  </div>
   <div class="month-selector"><button onclick="changeMonth(-1)">‹</button><span id="month-label"></span><button onclick="changeMonth(1)">›</button></div>
   <div id="month-summary"></div>
   <div id="records-list" class="record-list"></div>
@@ -210,6 +273,9 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
 <!-- RELATÓRIO -->
 <div id="sec-relatorio" class="section">
+  <div class="vehicle-bar" style="position:static">
+    <select id="rel-vehicle-select" onchange="renderRel()"></select>
+  </div>
   <div class="month-selector"><button onclick="changeReportMonth(-1)">‹</button><span id="report-month-label"></span><button onclick="changeReportMonth(1)">›</button></div>
   <div id="report-content"></div>
   <button class="btn-export" onclick="exportar()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> COPIAR RELATÓRIO</button>
@@ -217,10 +283,33 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   <button class="btn-danger" onclick="limparMes()">LIMPAR DADOS DESTE MÊS</button>
 </div>
 
-<!-- MODAL EDIÇÃO -->
+<!-- CONFIG -->
+<div id="sec-config" class="section">
+  <div class="section-title">Conta</div>
+  <div class="account-box">
+    <div class="account-label">Logado como</div>
+    <div class="account-email" id="cfg-email"></div>
+  </div>
+  <button class="btn-export" onclick="doLogout()">🚪 SAIR DA CONTA</button>
+
+  <div class="section-title">Veículos</div>
+  <div id="cfg-vehicle-list"></div>
+  <button class="btn-export" onclick="openVehicleModal(null)">+ NOVO VEÍCULO</button>
+
+  <div class="section-title">Backup (fora do navegador)</div>
+  <div class="account-box" style="margin-bottom:12px">
+    <div style="font-size:12px;color:var(--text2);line-height:1.5">Seus dados já ficam salvos num banco na nuvem (não dependem deste navegador). Este botão baixa uma cópia extra em arquivo, pra guardar onde quiser.</div>
+  </div>
+  <button class="btn-export" onclick="exportBackup()">⬇️ BAIXAR BACKUP COMPLETO (.json)</button>
+  <button class="btn-export" onclick="document.getElementById('import-file').click()">⬆️ RESTAURAR DE UM BACKUP (.json)</button>
+  <input type="file" id="import-file" accept="application/json" style="display:none" onchange="importBackup(this.files[0])">
+</div>
+
+<!-- MODAL EDIÇÃO ABASTECIMENTO -->
 <div class="modal-overlay" id="modal" onclick="if(event.target===this)fecharModal()">
   <div class="modal">
     <div class="modal-title">✏️ Editar Abastecimento <button class="modal-close" onclick="fecharModal()">✕</button></div>
+    <div class="form-group"><label>Veículo</label><select id="e-veiculo"></select></div>
     <div class="form-group"><label>Data</label><input type="date" id="e-data"></div>
     <div class="form-group">
       <label>Km do Hodômetro <span class="opt-label">(opcional)</span></label>
@@ -301,36 +390,221 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<!-- MODAL VEÍCULO -->
+<div class="modal-overlay" id="modal-veh" onclick="if(event.target===this)fecharModalVeh()">
+  <div class="modal">
+    <div class="modal-title"><span id="veh-modal-title">🚗 Novo Veículo</span><button class="modal-close" onclick="fecharModalVeh()">✕</button></div>
+    <div class="form-group"><label>Nome / Apelido</label><input type="text" id="v-nome" placeholder="Ex: Hilux 2022, Fiat Toro..."></div>
+    <div class="form-group"><label>Placa <span class="opt-label">(opcional)</span></label><input type="text" id="v-placa" placeholder="Ex: ABC1D23"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="fecharModalVeh()">CANCELAR</button>
+      <button class="btn-confirm" onclick="salvarVeiculo()">SALVAR</button>
+    </div>
+  </div>
+</div>
 
 <div class="bottom-nav">
   <button class="nav-item active" onclick="showSection('abastecer',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Abastecer</button>
   <button class="nav-item" onclick="showSection('historico',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>Histórico</button>
   <button class="nav-item" onclick="showSection('relatorio',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16M4 20V4m4 16v-8m4 8V8m4 12v-5"/></svg>Relatório</button>
+  <button class="nav-item" onclick="showSection('config',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Config</button>
 </div>
 
+</div><!-- /#app -->
+
+<div class="toast" id="toast"></div>
+
 <script>
-const SK='qm_combustivel_v3';
+const SUPA_URL='https://nowhrfftezcwjovlfnvp.supabase.co';
+const SUPA_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vd2hyZmZ0ZXpjd2pvdmxmbnZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1OTY0NTksImV4cCI6MjEwMzE3MjQ1OX0.t3Ywy2m8L0XkHLzpp5goeJjLVQAxPZlvXMnTrE7IHKY';
+const supa=window.supabase.createClient(SUPA_URL,SUPA_ANON);
+
 const MS=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-let cM=new Date().getMonth(),cY=new Date().getFullYear(),rM=cM,rY=cY,editId=null;
+let cM=new Date().getMonth(),cY=new Date().getFullYear(),rM=cM,rY=cY,editId=null,editVehId=null;
+let session=null,vehicles=[],curVehicleId=null;
+let authMode='login';
 
-function getData(){try{const d=JSON.parse(localStorage.getItem(SK));return Array.isArray(d)?d:[];}catch{return[];}}
-function saveData(d){localStorage.setItem(SK,JSON.stringify(d));localStorage.setItem(SK+'_bkp',JSON.stringify(d));}
-function fm(n){return Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fm(n){return Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function showToast(m,isErr){const t=document.getElementById('toast');t.textContent=m;t.classList.toggle('err',!!isErr);t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3000);}
 
+/* ================= AUTH ================= */
+function setAuthMode(m){
+  authMode=m;
+  document.getElementById('tab-login').classList.toggle('active',m==='login');
+  document.getElementById('tab-signup').classList.toggle('active',m==='signup');
+  document.getElementById('auth-submit').textContent=m==='login'?'ENTRAR':'CRIAR CONTA';
+  hideAuthMsg();
+}
+function showAuthMsg(msg,ok){const el=document.getElementById('auth-msg');el.textContent=msg;el.className='auth-msg show '+(ok?'ok':'err');}
+function hideAuthMsg(){document.getElementById('auth-msg').classList.remove('show');}
+
+async function submitAuth(){
+  const email=document.getElementById('auth-email').value.trim();
+  const pass=document.getElementById('auth-pass').value;
+  if(!email||!pass){showAuthMsg('Preencha e-mail e senha');return;}
+  if(pass.length<6){showAuthMsg('Senha precisa ter no mínimo 6 caracteres');return;}
+  const btn=document.getElementById('auth-submit');btn.disabled=true;
+  try{
+    if(authMode==='login'){
+      const{error}=await supa.auth.signInWithPassword({email,password:pass});
+      if(error)throw error;
+    }else{
+      const{data,error}=await supa.auth.signUp({email,password:pass});
+      if(error)throw error;
+      if(!data.session){
+        showAuthMsg('Conta criada! Verifique seu e-mail e clique no link de confirmação, depois volte aqui e entre.',true);
+        btn.disabled=false;return;
+      }
+    }
+  }catch(e){
+    showAuthMsg(traduzErro(e.message));
+  }
+  btn.disabled=false;
+}
+function traduzErro(m){
+  if(!m)return'Erro desconhecido';
+  if(/already registered|already exists/i.test(m))return'Este e-mail já tem conta. Use "Entrar".';
+  if(/invalid login credentials/i.test(m))return'E-mail ou senha incorretos.';
+  if(/email not confirmed/i.test(m))return'E-mail ainda não confirmado. Veja sua caixa de entrada.';
+  if(/password.*at least/i.test(m))return'Senha muito curta (mínimo 6 caracteres).';
+  return m;
+}
+async function resetPassword(){
+  const email=document.getElementById('auth-email').value.trim();
+  if(!email){showAuthMsg('Digite seu e-mail no campo acima primeiro');return;}
+  try{
+    const{error}=await supa.auth.resetPasswordForEmail(email);
+    if(error)throw error;
+    showAuthMsg('Enviamos um link de redefinição de senha pro seu e-mail.',true);
+  }catch(e){showAuthMsg(traduzErro(e.message));}
+}
+async function doLogout(){
+  await supa.auth.signOut();
+}
+
+supa.auth.onAuthStateChange((event,sess)=>{
+  session=sess;
+  if(session){renderLoggedIn();}else{renderLoggedOut();}
+});
+
+function renderLoggedOut(){
+  document.getElementById('app').style.display='none';
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('auth-pass').value='';
+}
+async function renderLoggedIn(){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('cfg-email').textContent=session.user.email;
+  await loadVehicles();
+  showSection('abastecer',document.querySelector('.nav-item'));
+}
+
+/* ================= VEÍCULOS ================= */
+async function loadVehicles(){
+  const{data,error}=await supa.from('combustivel_vehicles').select('*').order('created_at',{ascending:true});
+  if(error){showToast('Erro ao carregar veículos: '+error.message,true);return;}
+  vehicles=data||[];
+  if(!curVehicleId||!vehicles.find(v=>v.id===curVehicleId&&v.ativo)){
+    const ativo=vehicles.find(v=>v.ativo);
+    curVehicleId=ativo?ativo.id:null;
+  }
+  renderVehicleSelects();
+  renderConfigVehicles();
+}
+function renderVehicleSelects(){
+  const ativos=vehicles.filter(v=>v.ativo);
+  const emptyBox=document.getElementById('vehicle-empty-box');
+  const bar=document.getElementById('vehicle-bar-abastecer');
+  if(!ativos.length){
+    bar.style.display='none';
+    emptyBox.innerHTML='<div class="vehicle-empty"><p>Nenhum veículo cadastrado ainda.</p><button class="btn-save" onclick="openVehicleModal(null)">+ CADASTRAR VEÍCULO</button></div>';
+    document.getElementById('btn-registrar').disabled=true;
+  }else{
+    bar.style.display='flex';
+    emptyBox.innerHTML='';
+    document.getElementById('btn-registrar').disabled=false;
+  }
+  const optsAtivos=ativos.map(v=>`<option value="${v.id}">${escapeHtml(v.nome)}${v.placa?' — '+escapeHtml(v.placa):''}</option>`).join('');
+  const sel=document.getElementById('vehicle-select');
+  sel.innerHTML=optsAtivos;
+  if(curVehicleId)sel.value=curVehicleId;
+
+  const optsTodos='<option value="all">🚗 Todos os veículos</option>'+ativos.map(v=>`<option value="${v.id}">${escapeHtml(v.nome)}${v.placa?' — '+escapeHtml(v.placa):''}</option>`).join('');
+  const hSel=document.getElementById('hist-vehicle-select'),rSel=document.getElementById('rel-vehicle-select');
+  const hPrev=hSel.value||'all',rPrev=rSel.value||'all';
+  hSel.innerHTML=optsTodos;rSel.innerHTML=optsTodos;
+  hSel.value=[...hSel.options].some(o=>o.value===hPrev)?hPrev:'all';
+  rSel.value=[...rSel.options].some(o=>o.value===rPrev)?rPrev:'all';
+
+  const eSel=document.getElementById('e-veiculo');
+  eSel.innerHTML=ativos.map(v=>`<option value="${v.id}">${escapeHtml(v.nome)}${v.placa?' — '+escapeHtml(v.placa):''}</option>`).join('');
+}
+function onVehicleSelectChange(){
+  curVehicleId=document.getElementById('vehicle-select').value;
+  showLastFill();
+}
+function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function renderConfigVehicles(){
+  const box=document.getElementById('cfg-vehicle-list');
+  if(!vehicles.length){box.innerHTML='<div style="font-size:12px;color:var(--text2);padding:8px 0">Nenhum veículo ainda.</div>';return;}
+  box.innerHTML=vehicles.map(v=>`
+    <div class="veh-row ${v.ativo?'':'inativo'}">
+      <div><div class="veh-name">${escapeHtml(v.nome)}</div>${v.placa?`<div class="veh-plate">${escapeHtml(v.placa)}</div>`:''}${!v.ativo?'<div class="veh-plate">Inativo</div>':''}</div>
+      <div class="veh-actions">
+        <button class="veh-btn-edit" onclick="openVehicleModal('${v.id}')">Editar</button>
+        <button class="veh-btn-toggle" onclick="toggleVehicleAtivo('${v.id}')">${v.ativo?'Desativar':'Reativar'}</button>
+      </div>
+    </div>`).join('');
+}
+function openVehicleModal(id){
+  editVehId=id;
+  const v=id?vehicles.find(x=>x.id===id):null;
+  document.getElementById('veh-modal-title').textContent=v?'✏️ Editar Veículo':'🚗 Novo Veículo';
+  document.getElementById('v-nome').value=v?v.nome:'';
+  document.getElementById('v-placa').value=v?(v.placa||''):'';
+  document.getElementById('modal-veh').classList.add('open');
+}
+function fecharModalVeh(){document.getElementById('modal-veh').classList.remove('open');editVehId=null;}
+async function salvarVeiculo(){
+  const nome=document.getElementById('v-nome').value.trim();
+  const placa=document.getElementById('v-placa').value.trim();
+  if(!nome){showToast('Informe o nome do veículo',true);return;}
+  try{
+    if(editVehId){
+      const{error}=await supa.from('combustivel_vehicles').update({nome,placa:placa||null}).eq('id',editVehId);
+      if(error)throw error;
+    }else{
+      const{error}=await supa.from('combustivel_vehicles').insert({user_id:session.user.id,nome,placa:placa||null});
+      if(error)throw error;
+    }
+    fecharModalVeh();
+    await loadVehicles();
+    showToast('✅ Veículo salvo!');
+  }catch(e){showToast('Erro: '+e.message,true);}
+}
+async function toggleVehicleAtivo(id){
+  const v=vehicles.find(x=>x.id===id);if(!v)return;
+  if(v.ativo&&!confirm(`Desativar "${v.nome}"? Ele some da lista de seleção mas o histórico continua salvo.`))return;
+  try{
+    const{error}=await supa.from('combustivel_vehicles').update({ativo:!v.ativo}).eq('id',id);
+    if(error)throw error;
+    await loadVehicles();
+    showToast(v.ativo?'Veículo desativado':'Veículo reativado');
+  }catch(e){showToast('Erro: '+e.message,true);}
+}
+
+/* ================= FORM ABASTECER — cálculos ================= */
 document.getElementById('f-data').value=new Date().toISOString().split('T')[0];
-
-// Auto-calc total combustível
 ['f-litros','f-preco'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{
   const l=parseFloat(document.getElementById('f-litros').value),p=parseFloat(document.getElementById('f-preco').value);
   if(l>0&&p>0){document.getElementById('f-total').value=(l*p).toFixed(2);}
   else document.getElementById('f-total').value='';
-  calcArla('f');
-  calcDesc('f','reset');
+  calcArla('f');calcDesc('f','reset');
 }));
 document.getElementById('f-total').addEventListener('input',()=>{calcArla('f');calcDesc('f','reset');});
 
-// Arla
 function calcArla(pfx){
   const combTotal=parseFloat(document.getElementById(pfx+'-total').value)||0;
   const arlaTotal=parseFloat(document.getElementById(pfx+'-arla-total').value)||0;
@@ -342,8 +616,6 @@ function calcArla(pfx){
     el.style.display='flex';
   }else{el.style.display='none';}
 }
-
-// Desconto
 function calcDesc(pfx,origem){
   const combTotal=parseFloat(document.getElementById(pfx+'-total').value)||0;
   const arlaTotal=parseFloat(document.getElementById(pfx+'-arla-total').value)||0;
@@ -361,24 +633,28 @@ function calcDesc(pfx,origem){
   }else{elR.style.display='none';}
 }
 
-function showLastFill(){
-  const d=getData(),box=document.getElementById('last-fill-box');
-  if(!d.length){box.innerHTML='';return;}
-  const r=d[d.length-1],dt=r.data.split('-');
-  const kmT=r.km?r.km.toLocaleString('pt-BR')+' km':'Km não informado';
-  const totShow=r.totalFinal!=null?r.totalFinal:(r.totalGeral||r.total);
-  box.innerHTML=`<div class="last-fill"><div class="last-fill-title">Último Abastecimento</div><div class="last-fill-data">${dt[2]}/${dt[1]}/${dt[0]} — <strong>${kmT}</strong> <span>· ${r.litros.toFixed(1)}L · R$ ${fm(totShow)} · ${r.tipo}</span></div></div>`;
+async function showLastFill(){
+  const box=document.getElementById('last-fill-box');
+  if(!curVehicleId){box.innerHTML='';return;}
+  const{data,error}=await supa.from('combustivel_records').select('*').eq('vehicle_id',curVehicleId).order('data',{ascending:false}).order('km',{ascending:false}).limit(1);
+  if(error||!data||!data.length){box.innerHTML='';return;}
+  const r=data[0],dt=r.data.split('-');
+  const kmT=r.km!=null?Number(r.km).toLocaleString('pt-BR')+' km':'Km não informado';
+  const totShow=r.total_final!=null?r.total_final:r.total_geral;
+  box.innerHTML=`<div class="last-fill"><div class="last-fill-title">Último Abastecimento</div><div class="last-fill-data">${dt[2]}/${dt[1]}/${dt[0]} — <strong>${kmT}</strong> <span>· ${Number(r.litros).toFixed(1)}L · R$ ${fm(totShow)} · ${r.tipo}</span></div></div>`;
 }
 
-function salvar(){
+async function salvar(){
+  if(!curVehicleId){showToast('Cadastre um veículo primeiro',true);return;}
   const data=document.getElementById('f-data').value;
-  const km=parseFloat(document.getElementById('f-km').value)||null;
+  const kmVal=document.getElementById('f-km').value;
+  const km=kmVal?parseFloat(kmVal):null;
   const litros=parseFloat(document.getElementById('f-litros').value);
   const preco=parseFloat(document.getElementById('f-preco').value);
   let total=parseFloat(document.getElementById('f-total').value);
-  if(!data){showToast('⚠️ Informe a data');return;}
-  if(!litros||litros<=0){showToast('⚠️ Informe os litros');return;}
-  if(!preco||preco<=0){showToast('⚠️ Informe o preço/litro');return;}
+  if(!data){showToast('⚠️ Informe a data',true);return;}
+  if(!litros||litros<=0){showToast('⚠️ Informe os litros',true);return;}
+  if(!preco||preco<=0){showToast('⚠️ Informe o preço/litro',true);return;}
   if(!total||total<=0)total=litros*preco;
   const arlaL=parseFloat(document.getElementById('f-arla-litros').value)||0;
   const arlaT=parseFloat(document.getElementById('f-arla-total').value)||0;
@@ -386,29 +662,35 @@ function salvar(){
   const dP=parseFloat(document.getElementById('f-desc-pct').value)||0;
   const totalGeral=total+arlaT;
   const totalFinal=Math.max(0,totalGeral-dV);
-  const recs=getData();
   if(km){
-    const kmsV=recs.filter(r=>r.km).map(r=>r.km);
-    if(kmsV.length>0){const lk=Math.max(...kmsV);if(km<lk&&!confirm(`Km (${km.toLocaleString('pt-BR')}) menor que último (${lk.toLocaleString('pt-BR')}). Confirma?`))return;}
+    const{data:ultimos}=await supa.from('combustivel_records').select('km').eq('vehicle_id',curVehicleId).not('km','is',null).order('km',{ascending:false}).limit(1);
+    if(ultimos&&ultimos.length){
+      const lk=Number(ultimos[0].km);
+      if(km<lk&&!confirm(`Km (${km.toLocaleString('pt-BR')}) menor que último (${lk.toLocaleString('pt-BR')}). Confirma?`))return;
+    }
   }
-  recs.push({
-    id:Date.now(),data,km,litros,preco,
-    total:Math.round(total*100)/100,
-    arlaLitros:arlaL,arlaTotal:Math.round(arlaT*100)/100,
-    totalGeral:Math.round(totalGeral*100)/100,
-    descVal:dV,descPct:dP,
-    totalFinal:Math.round(totalFinal*100)/100,
-    pagamento:document.getElementById('f-pagamento').value,
-    tipo:document.getElementById('f-tipo').value,
-    combustivel:document.getElementById('f-combustivel').value,
-    posto:document.getElementById('f-posto').value.trim()
-  });
-  recs.sort((a,b)=>{const dc=a.data.localeCompare(b.data);return dc!==0?dc:(a.km||0)-(b.km||0);});
-  saveData(recs);
-  ['f-km','f-litros','f-preco','f-total','f-arla-litros','f-arla-total','f-desc-val','f-desc-pct','f-posto'].forEach(id=>document.getElementById(id).value='');
-  ['f-arla-result','f-desc-result'].forEach(id=>document.getElementById(id).style.display='none');
-  document.getElementById('f-data').value=new Date().toISOString().split('T')[0];
-  showLastFill();showToast('✅ Registrado!');
+  const btn=document.getElementById('btn-registrar');btn.disabled=true;
+  try{
+    const{error}=await supa.from('combustivel_records').insert({
+      user_id:session.user.id,vehicle_id:curVehicleId,data,km,litros,preco,
+      total:Math.round(total*100)/100,
+      arla_litros:arlaL,arla_total:Math.round(arlaT*100)/100,
+      total_geral:Math.round(totalGeral*100)/100,
+      desc_valor:dV,desc_pct:dP,
+      total_final:Math.round(totalFinal*100)/100,
+      pagamento:document.getElementById('f-pagamento').value,
+      tipo:document.getElementById('f-tipo').value,
+      combustivel:document.getElementById('f-combustivel').value,
+      posto:document.getElementById('f-posto').value.trim()||null
+    });
+    if(error)throw error;
+    ['f-km','f-litros','f-preco','f-total','f-arla-litros','f-arla-total','f-desc-val','f-desc-pct','f-posto'].forEach(id=>document.getElementById(id).value='');
+    ['f-arla-result','f-desc-result'].forEach(id=>document.getElementById(id).style.display='none');
+    document.getElementById('f-data').value=new Date().toISOString().split('T')[0];
+    await showLastFill();
+    showToast('✅ Registrado!');
+  }catch(e){showToast('Erro ao salvar: '+e.message,true);}
+  btn.disabled=false;
 }
 
 function showSection(n,el){
@@ -416,63 +698,77 @@ function showSection(n,el){
   document.getElementById('sec-'+n).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
   if(el)el.classList.add('active');
+  document.getElementById('vehicle-bar-abastecer').style.display=(n==='abastecer'&&vehicles.some(v=>v.ativo))?'flex':'none';
   if(n==='abastecer')showLastFill();
   if(n==='historico')renderHist();
   if(n==='relatorio')renderRel();
+  if(n==='config')renderConfigVehicles();
 }
 
-function getMR(m,y){return getData().filter(r=>{const d=new Date(r.data+'T12:00:00');return d.getMonth()===m&&d.getFullYear()===y;});}
-
+/* ================= HISTÓRICO / RELATÓRIO ================= */
+function monthRange(y,m){
+  const first=new Date(y,m,1).toISOString().split('T')[0];
+  const last=new Date(y,m+1,0).toISOString().split('T')[0];
+  return[first,last];
+}
+async function getMR(m,y,vehId){
+  const[first,last]=monthRange(y,m);
+  let q=supa.from('combustivel_records').select('*, combustivel_vehicles(nome)').gte('data',first).lte('data',last).order('data',{ascending:true}).order('km',{ascending:true});
+  if(vehId&&vehId!=='all')q=q.eq('vehicle_id',vehId);
+  const{data,error}=await q;
+  if(error){showToast('Erro ao buscar histórico: '+error.message,true);return[];}
+  return data||[];
+}
 function pgBadge(pg){
   if(!pg)return'';
   const m={dinheiro:['pgto-dinheiro','💵 dinheiro'],cartao:['pgto-cartao','💳 cartão'],pix:['pgto-pix','⚡ pix']};
   const[c,l]=m[pg]||['pgto-cartao','💳 cartão'];
   return`<span class="pgto-badge ${c}">${l}</span>`;
 }
-
 function cs(recs){
   if(!recs.length)return null;
-  const tL=recs.reduce((s,r)=>s+r.litros,0);
-  const tArlaL=recs.reduce((s,r)=>s+(r.arlaLitros||0),0);
-  const tArlaV=recs.reduce((s,r)=>s+(r.arlaTotal||0),0);
-  const tG=recs.reduce((s,r)=>s+(r.totalFinal!=null?r.totalFinal:(r.totalGeral||r.total)),0);
-  const tDesc=recs.reduce((s,r)=>s+(r.descVal||0),0);
-  const pM=tL>0?recs.reduce((s,r)=>s+(r.total||0),0)/tL:0;
-  const kms=recs.filter(r=>r.km).map(r=>r.km).sort((a,b)=>a-b);
+  const tL=recs.reduce((s,r)=>s+Number(r.litros),0);
+  const tArlaL=recs.reduce((s,r)=>s+Number(r.arla_litros||0),0);
+  const tArlaV=recs.reduce((s,r)=>s+Number(r.arla_total||0),0);
+  const tG=recs.reduce((s,r)=>s+Number(r.total_final!=null?r.total_final:r.total_geral),0);
+  const tDesc=recs.reduce((s,r)=>s+Number(r.desc_valor||0),0);
+  const pM=tL>0?recs.reduce((s,r)=>s+Number(r.total||0),0)/tL:0;
+  const kms=recs.filter(r=>r.km!=null).map(r=>Number(r.km)).sort((a,b)=>a-b);
   const kR=kms.length>=2?kms[kms.length-1]-kms[0]:0;
   const mKL=kR>0&&tL>0?kR/tL:0;
   const tr=recs.filter(r=>r.tipo==='trabalho'),lz=recs.filter(r=>r.tipo==='lazer');
   return{tL,tArlaL,tArlaV,tG,tDesc,pM,kR,mKL,kMin:kms[0],kMax:kms[kms.length-1],
     tr,lz,
-    gT:tr.reduce((s,r)=>s+(r.totalFinal!=null?r.totalFinal:(r.totalGeral||r.total)),0),
-    gL:lz.reduce((s,r)=>s+(r.totalFinal!=null?r.totalFinal:(r.totalGeral||r.total)),0),
-    lT:tr.reduce((s,r)=>s+r.litros,0),lL:lz.reduce((s,r)=>s+r.litros,0),
+    gT:tr.reduce((s,r)=>s+Number(r.total_final!=null?r.total_final:r.total_geral),0),
+    gL:lz.reduce((s,r)=>s+Number(r.total_final!=null?r.total_final:r.total_geral),0),
+    lT:tr.reduce((s,r)=>s+Number(r.litros),0),lL:lz.reduce((s,r)=>s+Number(r.litros),0),
     cK:kR>0?tG/kR:0,n:recs.length};
 }
 
 function changeMonth(d){cM+=d;if(cM>11){cM=0;cY++;}if(cM<0){cM=11;cY--;}renderHist();}
-
-function renderHist(){
+async function renderHist(){
   document.getElementById('month-label').textContent=`${MS[cM]} ${cY}`;
-  const recs=getMR(cM,cY),sb=document.getElementById('month-summary'),c=document.getElementById('records-list');
+  const vehId=document.getElementById('hist-vehicle-select').value||'all';
+  const recs=await getMR(cM,cY,vehId),sb=document.getElementById('month-summary'),c=document.getElementById('records-list');
   if(!recs.length){sb.innerHTML='';c.innerHTML='<div class="empty"><div class="empty-icon">⛽</div><p>Nenhum abastecimento</p></div>';return;}
   const s=cs(recs);
   sb.innerHTML=`<div class="summary-bar"><span class="sb-label">${s.n} abastec. · ${s.tL.toFixed(0)}L comb.${s.tArlaL>0?' · '+s.tArlaL.toFixed(0)+'L Arla':''}</span><span class="sb-value">R$ ${fm(s.tG)}</span></div>`;
-  c.innerHTML=recs.map(r=>{
+  c.innerHTML=recs.slice().reverse().map(r=>{
     const d=r.data.split('-');
     const tc=r.tipo==='trabalho'?'tipo-trabalho':'tipo-lazer';
     const tt=r.tipo==='trabalho'?'Trab':'Lazer';
     const cb=r.combustivel?(r.combustivel.charAt(0).toUpperCase()+r.combustivel.slice(1)):'';
-    const kmT=r.km?r.km.toLocaleString('pt-BR')+' km':'—';
-    const totShow=r.totalFinal!=null?r.totalFinal:(r.totalGeral||r.total);
-    const descT=r.descVal>0?` <span style="color:var(--amber);font-size:10px">-R$${fm(r.descVal)}</span>`:'';
-    const arlaLine=r.arlaLitros>0?`<div class="record-arla">🔵 Arla: ${r.arlaLitros.toFixed(1)}L · R$ ${fm(r.arlaTotal)}</div>`:'';
+    const kmT=r.km!=null?Number(r.km).toLocaleString('pt-BR')+' km':'—';
+    const totShow=r.total_final!=null?r.total_final:r.total_geral;
+    const descT=r.desc_valor>0?` <span style="color:var(--amber);font-size:10px">-R$${fm(r.desc_valor)}</span>`:'';
+    const arlaLine=r.arla_litros>0?`<div class="record-arla">🔵 Arla: ${Number(r.arla_litros).toFixed(1)}L · R$ ${fm(r.arla_total)}</div>`:'';
+    const vehLine=vehId==='all'&&r.combustivel_vehicles?`<div class="record-vehicle">🚗 ${escapeHtml(r.combustivel_vehicles.nome)}</div>`:'';
     return`<div class="record-item">
       <div class="record-main">
         <div>
           <div class="record-date">${d[2]}/${d[1]} <span class="tipo-badge ${tc}">${tt}</span>${pgBadge(r.pagamento)}</div>
-          <div class="record-details">${r.litros.toFixed(1)}L ${cb} × R$ ${r.preco.toFixed(2)}${r.posto?' · '+r.posto:''}</div>
-          ${arlaLine}
+          <div class="record-details">${Number(r.litros).toFixed(1)}L ${cb} × R$ ${Number(r.preco).toFixed(2)}${r.posto?' · '+escapeHtml(r.posto):''}</div>
+          ${arlaLine}${vehLine}
         </div>
         <div>
           <div class="record-total">R$ ${fm(totShow)}${descT}</div>
@@ -480,20 +776,27 @@ function renderHist(){
         </div>
       </div>
       <div class="record-actions">
-        <button class="btn-edit-rec" onclick="abrirEdicao(${r.id})">✏️ Editar</button>
-        <button class="btn-del-rec" onclick="delRec(${r.id})">🗑 Excluir</button>
+        <button class="btn-edit-rec" onclick="abrirEdicao('${r.id}')">✏️ Editar</button>
+        <button class="btn-del-rec" onclick="delRec('${r.id}')">🗑 Excluir</button>
       </div>
     </div>`;
   }).join('');
 }
-
-function delRec(id){if(!confirm('Excluir este registro?'))return;saveData(getData().filter(r=>r.id!==id));renderHist();showToast('🗑 Excluído');}
-
-function abrirEdicao(id){
-  const r=getData().find(x=>x.id===id);if(!r)return;
+async function delRec(id){
+  if(!confirm('Excluir este registro?'))return;
+  try{
+    const{error}=await supa.from('combustivel_records').delete().eq('id',id);
+    if(error)throw error;
+    renderHist();showToast('🗑 Excluído');
+  }catch(e){showToast('Erro: '+e.message,true);}
+}
+async function abrirEdicao(id){
+  const{data:r,error}=await supa.from('combustivel_records').select('*').eq('id',id).single();
+  if(error||!r){showToast('Erro ao carregar registro',true);return;}
   editId=id;
+  document.getElementById('e-veiculo').value=r.vehicle_id;
   document.getElementById('e-data').value=r.data;
-  document.getElementById('e-km').value=r.km||'';
+  document.getElementById('e-km').value=r.km!=null?r.km:'';
   document.getElementById('e-litros').value=r.litros;
   document.getElementById('e-preco').value=r.preco;
   document.getElementById('e-total').value=r.total;
@@ -501,29 +804,29 @@ function abrirEdicao(id){
   document.getElementById('e-tipo').value=r.tipo||'trabalho';
   document.getElementById('e-combustivel').value=r.combustivel||'diesel';
   document.getElementById('e-posto').value=r.posto||'';
-  document.getElementById('e-arla-litros').value=r.arlaLitros||'';
-  document.getElementById('e-arla-total').value=r.arlaTotal||'';
-  document.getElementById('e-desc-val').value=r.descVal||'';
-  document.getElementById('e-desc-pct').value=r.descPct||'';
+  document.getElementById('e-arla-litros').value=r.arla_litros||'';
+  document.getElementById('e-arla-total').value=r.arla_total||'';
+  document.getElementById('e-desc-val').value=r.desc_valor||'';
+  document.getElementById('e-desc-pct').value=r.desc_pct||'';
   const arlaEl=document.getElementById('e-arla-result');
-  if(r.arlaTotal>0){document.getElementById('e-arla-result-val').textContent='R$ '+fm(r.totalGeral||r.total);arlaEl.style.display='flex';}
+  if(r.arla_total>0){document.getElementById('e-arla-result-val').textContent='R$ '+fm(r.total_geral);arlaEl.style.display='flex';}
   else{arlaEl.style.display='none';}
   const descEl=document.getElementById('e-desc-result');
-  if(r.descVal>0){document.getElementById('e-desc-result-val').textContent='R$ '+fm(r.totalFinal)+' (−R$ '+fm(r.descVal)+')';descEl.style.display='flex';}
+  if(r.desc_valor>0){document.getElementById('e-desc-result-val').textContent='R$ '+fm(r.total_final)+' (−R$ '+fm(r.desc_valor)+')';descEl.style.display='flex';}
   else{descEl.style.display='none';}
   document.getElementById('modal').classList.add('open');
 }
-
 function fecharModal(){document.getElementById('modal').classList.remove('open');editId=null;}
-
-function salvarEdicao(){
+async function salvarEdicao(){
   if(!editId)return;
+  const vehicle_id=document.getElementById('e-veiculo').value;
   const data=document.getElementById('e-data').value;
-  const km=parseFloat(document.getElementById('e-km').value)||null;
+  const kmVal=document.getElementById('e-km').value;
+  const km=kmVal?parseFloat(kmVal):null;
   const litros=parseFloat(document.getElementById('e-litros').value);
   const preco=parseFloat(document.getElementById('e-preco').value);
   let total=parseFloat(document.getElementById('e-total').value);
-  if(!data||!litros||!preco){showToast('⚠️ Preencha data, litros e preço');return;}
+  if(!data||!litros||!preco){showToast('⚠️ Preencha data, litros e preço',true);return;}
   if(!total||total<=0)total=litros*preco;
   const arlaL=parseFloat(document.getElementById('e-arla-litros').value)||0;
   const arlaT=parseFloat(document.getElementById('e-arla-total').value)||0;
@@ -531,32 +834,33 @@ function salvarEdicao(){
   const dP=parseFloat(document.getElementById('e-desc-pct').value)||0;
   const totalGeral=total+arlaT;
   const totalFinal=Math.max(0,totalGeral-dV);
-  const recs=getData().map(r=>{
-    if(r.id!==editId)return r;
-    return{...r,data,km,litros,preco,
+  try{
+    const{error}=await supa.from('combustivel_records').update({
+      vehicle_id,data,km,litros,preco,
       total:Math.round(total*100)/100,
-      arlaLitros:arlaL,arlaTotal:Math.round(arlaT*100)/100,
-      totalGeral:Math.round(totalGeral*100)/100,
-      descVal:dV,descPct:dP,
-      totalFinal:Math.round(totalFinal*100)/100,
+      arla_litros:arlaL,arla_total:Math.round(arlaT*100)/100,
+      total_geral:Math.round(totalGeral*100)/100,
+      desc_valor:dV,desc_pct:dP,
+      total_final:Math.round(totalFinal*100)/100,
       pagamento:document.getElementById('e-pagamento').value,
       tipo:document.getElementById('e-tipo').value,
       combustivel:document.getElementById('e-combustivel').value,
-      posto:document.getElementById('e-posto').value.trim()};
-  });
-  recs.sort((a,b)=>{const dc=a.data.localeCompare(b.data);return dc!==0?dc:(a.km||0)-(b.km||0);});
-  saveData(recs);fecharModal();renderHist();showToast('✅ Editado!');
+      posto:document.getElementById('e-posto').value.trim()||null
+    }).eq('id',editId);
+    if(error)throw error;
+    fecharModal();renderHist();showToast('✅ Editado!');
+  }catch(e){showToast('Erro: '+e.message,true);}
 }
 
 function changeReportMonth(d){rM+=d;if(rM>11){rM=0;rY++;}if(rM<0){rM=11;rY--;}renderRel();}
-
-function renderRel(){
+async function renderRel(){
   document.getElementById('report-month-label').textContent=`${MS[rM]} ${rY}`;
-  const recs=getMR(rM,rY),c=document.getElementById('report-content');
+  const vehId=document.getElementById('rel-vehicle-select').value||'all';
+  const recs=await getMR(rM,rY,vehId),c=document.getElementById('report-content');
   if(!recs.length){c.innerHTML='<div class="empty"><div class="empty-icon">📊</div><p>Sem dados</p></div>';return;}
   const s=cs(recs);
   let pm=rM-1,py=rY;if(pm<0){pm=11;py--;}
-  const pr=cs(getMR(pm,py));let dh='';
+  const prRecs=await getMR(pm,py,vehId);const pr=cs(prRecs);let dh='';
   if(pr){const df=s.tG-pr.tG,pc=pr.tG>0?((df/pr.tG)*100).toFixed(0):0,ar=df>0?'↑':df<0?'↓':'→',cl=df>0?'var(--red)':df<0?'var(--green)':'var(--text2)';dh=`<div class="stat-sub" style="color:${cl}">${ar} ${Math.abs(pc)}% vs ${MS[pm].substring(0,3)}</div>`;}
   const descBlock=s.tDesc>0?`<div class="stat-card"><div class="stat-label">💰 Descontos</div><div class="stat-value green">R$ ${fm(s.tDesc)}</div><div class="stat-sub">economizados</div></div>`:'';
   const arlaBlock=s.tArlaL>0?`<div class="stat-card"><div class="stat-label">🔵 Arla 32</div><div class="stat-value arla">R$ ${fm(s.tArlaV)}</div><div class="stat-sub">${s.tArlaL.toFixed(1)} L no mês</div></div>`:'';
@@ -574,10 +878,12 @@ function renderRel(){
   </div>`;
 }
 
-function gTxt(){
-  const recs=getMR(rM,rY);if(!recs.length)return null;
+async function gTxt(){
+  const vehId=document.getElementById('rel-vehicle-select').value||'all';
+  const recs=await getMR(rM,rY,vehId);if(!recs.length)return null;
   const s=cs(recs);
-  let t=`CONTROLE DE COMBUSTÍVEL\nQUEIROZ MARRA SOLUÇÕES INTEGRADAS\n${MS[rM]} / ${rY}\n${'═'.repeat(38)}\n\nRESUMO\n`;
+  const vehLabel=vehId==='all'?'Todos os veículos':(vehicles.find(v=>v.id===vehId)||{}).nome||'';
+  let t=`CONTROLE DE COMBUSTÍVEL\nQUEIROZ MARRA SOLUÇÕES INTEGRADAS\n${vehLabel}\n${MS[rM]} / ${rY}\n${'═'.repeat(38)}\n\nRESUMO\n`;
   t+=`• Total gasto: R$ ${fm(s.tG)}\n`;
   if(s.tArlaV>0)t+=`• Arla 32: R$ ${fm(s.tArlaV)} (${s.tArlaL.toFixed(1)} L)\n`;
   if(s.tDesc>0)t+=`• Descontos obtidos: R$ ${fm(s.tDesc)}\n`;
@@ -586,21 +892,75 @@ function gTxt(){
   t+=`POR TIPO\n• Trabalho: R$ ${fm(s.gT)} (${s.tr.length}x, ${s.lT.toFixed(0)}L)\n• Lazer: R$ ${fm(s.gL)} (${s.lz.length}x, ${s.lL.toFixed(0)}L)\n\nDETALHES\n${'─'.repeat(38)}\n`;
   recs.forEach(r=>{
     const d=r.data.split('-'),cb=r.combustivel?r.combustivel.substring(0,3).toUpperCase():'';
-    const kmT=r.km?r.km.toLocaleString('pt-BR')+'km':'s/km';
-    const totShow=r.totalFinal!=null?r.totalFinal:(r.totalGeral||r.total);
-    const dT=r.descVal>0?` (-R$${fm(r.descVal)})`:'';
-    const arlaT=r.arlaLitros>0?` | Arla ${r.arlaLitros.toFixed(1)}L R$${fm(r.arlaTotal)}`:'';
-    t+=`${d[2]}/${d[1]} | ${r.litros.toFixed(1)}L ${cb} | R$${r.preco.toFixed(2)}/L${arlaT} | R$${fm(totShow)}${dT} | ${r.pagamento||'cartão'} | ${kmT} | ${r.tipo}${r.posto?' | '+r.posto:''}\n`;
+    const kmT=r.km!=null?Number(r.km).toLocaleString('pt-BR')+'km':'s/km';
+    const totShow=r.total_final!=null?r.total_final:r.total_geral;
+    const dT=r.desc_valor>0?` (-R$${fm(r.desc_valor)})`:'';
+    const arlaT=r.arla_litros>0?` | Arla ${Number(r.arla_litros).toFixed(1)}L R$${fm(r.arla_total)}`:'';
+    const vehT=vehId==='all'&&r.combustivel_vehicles?` | ${r.combustivel_vehicles.nome}`:'';
+    t+=`${d[2]}/${d[1]} | ${Number(r.litros).toFixed(1)}L ${cb} | R$${Number(r.preco).toFixed(2)}/L${arlaT} | R$${fm(totShow)}${dT} | ${r.pagamento||'cartão'} | ${kmT} | ${r.tipo}${r.posto?' | '+r.posto:''}${vehT}\n`;
   });
   t+=`${'─'.repeat(38)}\n`;return t;
 }
-function exportar(){const t=gTxt();if(!t){showToast('⚠️ Sem dados');return;}if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(()=>showToast('📋 Copiado!')).catch(()=>fbCopy(t));else fbCopy(t);}
-function whatsapp(){const t=gTxt();if(!t){showToast('⚠️ Sem dados');return;}window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');}
-function fbCopy(t){const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0;left:-999px';document.body.appendChild(a);a.select();a.setSelectionRange(0,999999);try{document.execCommand('copy');showToast('📋 Copiado!');}catch{showToast('⚠️ Erro ao copiar');}document.body.removeChild(a);}
-function limparMes(){const r=getMR(rM,rY);if(!r.length){showToast('⚠️ Mês vazio');return;}if(!confirm(`Excluir ${r.length} registros de ${MS[rM]} ${rY}?`))return;const all=getData().filter(x=>{const d=new Date(x.data+'T12:00:00');return!(d.getMonth()===rM&&d.getFullYear()===rY);});saveData(all);renderRel();showToast('🗑 Mês limpo');}
-function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2500);}
+async function exportar(){const t=await gTxt();if(!t){showToast('⚠️ Sem dados',true);return;}if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(()=>showToast('📋 Copiado!')).catch(()=>fbCopy(t));else fbCopy(t);}
+async function whatsapp(){const t=await gTxt();if(!t){showToast('⚠️ Sem dados',true);return;}window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');}
+function fbCopy(t){const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0;left:-999px';document.body.appendChild(a);a.select();a.setSelectionRange(0,999999);try{document.execCommand('copy');showToast('📋 Copiado!');}catch{showToast('⚠️ Erro ao copiar',true);}document.body.removeChild(a);}
+async function limparMes(){
+  const vehId=document.getElementById('rel-vehicle-select').value||'all';
+  const r=await getMR(rM,rY,vehId);
+  if(!r.length){showToast('⚠️ Mês vazio',true);return;}
+  if(!confirm(`Excluir ${r.length} registros de ${MS[rM]} ${rY}?`))return;
+  try{
+    const ids=r.map(x=>x.id);
+    const{error}=await supa.from('combustivel_records').delete().in('id',ids);
+    if(error)throw error;
+    renderRel();showToast('🗑 Mês limpo');
+  }catch(e){showToast('Erro: '+e.message,true);}
+}
 
-showLastFill();
+/* ================= BACKUP FORA DA NUVEM (.json) ================= */
+async function exportBackup(){
+  try{
+    const{data:vehs,error:e1}=await supa.from('combustivel_vehicles').select('*');
+    if(e1)throw e1;
+    const{data:recs,error:e2}=await supa.from('combustivel_records').select('*');
+    if(e2)throw e2;
+    const payload={exported_at:new Date().toISOString(),email:session.user.email,vehicles:vehs,records:recs};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=`backup-combustivel-qm-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('✅ Backup baixado!');
+  }catch(e){showToast('Erro ao gerar backup: '+e.message,true);}
+}
+async function importBackup(file){
+  if(!file)return;
+  try{
+    const text=await file.text();
+    const payload=JSON.parse(text);
+    if(!payload.vehicles||!payload.records)throw new Error('Arquivo não parece um backup válido');
+    if(!confirm(`Este arquivo tem ${payload.vehicles.length} veículo(s) e ${payload.records.length} registro(s). Eles serão importados como NOVOS (não substituem nada existente). Continuar?`))return;
+    const idMap={};
+    for(const v of payload.vehicles){
+      const{data,error}=await supa.from('combustivel_vehicles').insert({user_id:session.user.id,nome:v.nome,placa:v.placa,ativo:v.ativo!==false}).select().single();
+      if(error)throw error;
+      idMap[v.id]=data.id;
+    }
+    const newRecs=payload.records.filter(r=>idMap[r.vehicle_id]).map(r=>({
+      user_id:session.user.id,vehicle_id:idMap[r.vehicle_id],data:r.data,km:r.km,litros:r.litros,preco:r.preco,total:r.total,
+      arla_litros:r.arla_litros||0,arla_total:r.arla_total||0,total_geral:r.total_geral,desc_valor:r.desc_valor||0,desc_pct:r.desc_pct||0,
+      total_final:r.total_final,pagamento:r.pagamento,tipo:r.tipo,combustivel:r.combustivel,posto:r.posto
+    }));
+    if(newRecs.length){
+      const{error}=await supa.from('combustivel_records').insert(newRecs);
+      if(error)throw error;
+    }
+    await loadVehicles();
+    showToast(`✅ Restaurado: ${payload.vehicles.length} veículo(s), ${newRecs.length} registro(s)`);
+  }catch(e){showToast('Erro ao importar: '+e.message,true);}
+  document.getElementById('import-file').value='';
+}
 </script>
 </body>
 </html>
