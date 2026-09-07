@@ -4,9 +4,7 @@ Registro de abastecimento (data, litros, preço/litro, Arla 32, desconto, forma 
 
 ## Arquivo oficial
 
-**`index.html`** é a versão em uso — a única editada desde o upload inicial (Arla 32, desconto, edição de registro, forma de pagamento).
-
-`CONTROLE DE COMBUSTIVEL.html` é a versão anterior, sem essas funções. Ficou no repo mas não recebeu nenhuma atualização depois do upload inicial — não é a versão a abrir/editar.
+**`index.html`** é o único arquivo do app (Arla 32, desconto, edição de registro, forma de pagamento). A versão anterior (`CONTROLE DE COMBUSTIVEL.html`, sem essas funções) foi removida — nunca recebeu atualização depois do upload inicial.
 
 ## Arquitetura — leia antes de confiar dados aqui
 
